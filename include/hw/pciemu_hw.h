@@ -26,7 +26,7 @@
  * --------------------------------------------------------------------------------
  */
 #define PCIEMU_HW_BAR0  0
-#define PCIEMU_HW_CNT   1
+#define PCIEMU_HW_BAR_CNT   1
 
 /**
  * --------------------------------------------------------------------------------
@@ -35,6 +35,7 @@
  * --------------------------------------------------------------------------------
  */
 /* General Purpose Registers */
+#define PCIEMU_HW_BAR0_REG_CNT  4
 #define PCIEMU_HW_BAR0_REG_0    0x00
 #define PCIEMU_HW_BAR0_REG_1    0x08
 #define PCIEMU_HW_BAR0_REG_2    0x10

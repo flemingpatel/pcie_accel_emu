@@ -36,7 +36,7 @@
 static inline bool
 pciemu_mmio_valid_access(hwaddr addr, unsigned int size)
 {
-    return (PCIEMU_HW_BAR0_START <= addr && addr <= PCIEMU_HW_BAR0_END);
+    return (addr <= PCIEMU_HW_BAR0_END);
 }
 
 /**

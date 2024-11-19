@@ -44,7 +44,7 @@ pciemu_dma_addr_mask(PCIEMUDevice *dev, dma_addr_t addr)
 static inline bool
 pciemu_dma_inside_device_boundaries(dma_addr_t addr)
 {
-    return (PCIEMU_HW_DMA_AREA_START <= addr && addr <= PCIEMU_HW_DMA_AREA_START + PCIEMU_HW_DMA_AREA_SIZE);
+    return (addr <= PCIEMU_HW_DMA_AREA_START + PCIEMU_HW_DMA_AREA_SIZE);
 }
 
 /**

@@ -52,7 +52,12 @@ ln -sf "$INCLUDE_SRC" "$INCLUDE_DEST"
 
 # Configure QEMU
 cd "$QEMU_DIR" || error_exit "Failed to change directory to $QEMU_DIR."
-./configure --enable-vde --enable-virtfs --target-list=arm-softmmu || error_exit "QEMU configuration failed."
+./configure --target-list=arm-softmmu \
+--disable-bsd-user \
+--disable-guest-agent \
+--disable-gtk \
+--enable-vde \
+--enable-virtfs || error_exit "QEMU configuration failed."
 
 { set +x; } 2>/dev/null  # Disable tracing temporarily
 printf '%s\n' "Setup finished. You may now build QEMU (cd $QEMU_DIR && make -j\$(nproc))"
