@@ -52,10 +52,11 @@ ln -sf "$INCLUDE_SRC" "$INCLUDE_DEST"
 
 # Configure QEMU
 cd "$QEMU_DIR" || error_exit "Failed to change directory to $QEMU_DIR."
-./configure --target-list=arm-softmmu \
+./configure --target-list=aarch64-softmmu \
 --disable-bsd-user \
 --disable-guest-agent \
 --disable-gtk \
+--disable-werror \
 --enable-vde \
 --enable-virtfs || error_exit "QEMU configuration failed."
 
