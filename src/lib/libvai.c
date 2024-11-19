@@ -1,6 +1,6 @@
-/* libvai.c - User-space library implementation for driver interactions
- *
- * Implements functions to interact with the driver via IOCTL.
+/**
+ * libvai.c
+ * User-space library implementation for driver interactions
  *
  */
 
@@ -78,7 +78,7 @@ int vai_unload_model(int fd, uint32_t model_id)
 }
 
 /* Runs inference using a loaded AI model */
-int vai_run_inference(int fd, uint32_t model_id, uint64_t input_handle, uint64_t output_handle)
+int vai_run_inference(int fd, uint32_t model_id, uint64_t input_handle, uint64_t output_handle, uint32_t batch_size)
 {
     struct vai_run_inference_arg arg;
     int ret;

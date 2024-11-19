@@ -1,5 +1,5 @@
-/* base.h - Base header for user-space
- *
+/**
+ * base.h
  * Provides common includes for user-space.
  *
  */

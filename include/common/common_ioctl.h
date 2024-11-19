@@ -1,6 +1,6 @@
-/* common_ioctl.h - Common IOCTL definition
- *
- * Provides common IOCTL definition.
+/**
+ * common_ioctl.h
+ * Provides common IOCTL definitions.
  *
  */
 
@@ -19,22 +19,23 @@
 /* IOCTL Structures */
 struct vai_alloc_buffer_arg
 {
-    size_t size;               /* Size of the buffer in bytes */
-    uint64_t handle;           /* Handle to the allocated buffer (output) */
+    size_t size;            /* Size of the buffer in bytes */
+    uint64_t handle;        /* Handle to the allocated buffer (output) */
 };
 
 struct vai_load_model_arg
 {
-    uint64_t buffer_handle;    /* Handle to buffer containing model data */
-    size_t data_size;          /* Size of the model data in bytes */
-    uint32_t model_id;         /* Output: Assigned model ID */
+    uint64_t buffer_handle; /* Handle to buffer containing model data */
+    size_t data_size;       /* Size of the model data in bytes */
+    uint32_t model_id;      /* Output: Assigned model ID */
 };
 
 struct vai_run_inference_arg
 {
-    uint32_t model_id;         /* ID of the loaded model */
-    uint64_t input_handle;     /* Handle to input data buffer */
-    uint64_t output_handle;    /* Handle to output data buffer */
+    uint32_t model_id;      /* ID of the loaded model */
+    uint64_t input_handle;  /* Handle to input data buffer */
+    uint64_t output_handle; /* Handle to output data buffer */
+    uint32_t batch_size;    /* Number of inputs to process */
 };
 
 /* IOCTL Magic Number */
