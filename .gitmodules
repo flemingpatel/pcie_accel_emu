@@ -1,3 +1,6 @@
 [submodule "submodules/qemu"]
 	path = submodules/qemu
 	url = git@github.com:qemu/qemu.git
+[submodule "submodules/buildroot"]
+	path = submodules/buildroot
+	url = git://git.busybox.net/buildroot
