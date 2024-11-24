@@ -1,64 +1,66 @@
 #!/bin/bash
-# setup.sh : Setup QEMU for building pciemu
-#
+# setup_qemu.sh:  Setup QEMU for building pciemu
+# Author:         Fleming Patel
 
-set -euo pipefail
+# Source shared definitions
+source "$(dirname "$0")/shared.sh"
 
-# Display all commands (useful for debugging; remove `set -x` if not needed)
-set -x
+# Parse options
+VERBOSE=0
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    -v|--verbose) VERBOSE=1 ;;
+    *) error_exit "Unknown option: $1" ;;
+  esac
+  shift
+done
 
-# Function to display an error message and exit
-error_exit() {
-  { set +x; } 2>/dev/null  # Disable tracing temporarily
-  printf '%s\n' "Error: $1" >&2
-  exit 1
-}
+# Enable verbose mode if requested
+if [[ $VERBOSE -eq 1 ]]; then
+  set -x
+fi
 
-# Ensure required tools are available
-command -v git >/dev/null || error_exit "Git is not installed. Please install Git and try again."
-command -v ln >/dev/null || error_exit "Symbolic link creation (ln) is unavailable."
+# Check prerequisites
+require_tool ln
 
-# Repository information
-REPOSITORY_DIR=$(git rev-parse --show-toplevel) || error_exit "Not inside a Git repository. Please run from the repo root."
-REPOSITORY_NAME="pciemu"
-QEMU_DIR="$REPOSITORY_DIR/submodules/qemu"
+# Ensure submodule is initialized
+git submodule update --init --recursive
 
 # Validate QEMU directory
 if [[ ! -d "$QEMU_DIR" ]]; then
-  error_exit "QEMU directory not found at $QEMU_DIR. Ensure the submodule is cloned and updated."
+  error_exit "QEMU directory not found at $QEMU_DIR; Ensure the submodule is cloned"
 fi
 
-[ -x "$QEMU_DIR/configure" ] || error_exit "QEMU configure script not found. Ensure QEMU submodule is initialized."
-
-# Edit QEMU build files (check before appending)
+# QEMU build files
 KCONFIG_FILE="$QEMU_DIR/hw/misc/Kconfig"
 MESON_FILE="$QEMU_DIR/hw/misc/meson.build"
+REPOSITORY_NAME="pciemu"
 
+[ -x "$QEMU_DIR/configure" ] || error_exit "QEMU configure script not found; Ensure QEMU submodule is initialized"
+
+# Edit QEMU build files if necessary
 if ! grep -q "source $REPOSITORY_NAME/Kconfig" "$KCONFIG_FILE"; then
-  printf '%s\n' "source $REPOSITORY_NAME/Kconfig" >> "$KCONFIG_FILE"
+  echo "Adding pciemu Kconfig"
+  echo "source $REPOSITORY_NAME/Kconfig" >> "$KCONFIG_FILE"
 fi
 
 if ! grep -q "subdir('$REPOSITORY_NAME')" "$MESON_FILE"; then
-  printf '%s\n' "subdir('$REPOSITORY_NAME')" >> "$MESON_FILE"
+  echo "Adding pciemu meson subdir"
+  echo "subdir('$REPOSITORY_NAME')" >> "$MESON_FILE"
 fi
 
 # Create symbolic links
-HW_SRC_LINK="$QEMU_DIR/hw/misc/"
-INCLUDE_SRC="$REPOSITORY_DIR/include/hw/pciemu_hw.h"
-INCLUDE_DEST="$REPOSITORY_DIR/src/hw/$REPOSITORY_NAME/pciemu_hw.h"
-
-ln -sf "$REPOSITORY_DIR/src/hw/$REPOSITORY_NAME/" "$HW_SRC_LINK"
-ln -sf "$INCLUDE_SRC" "$INCLUDE_DEST"
+ln -sf "$REPOSITORY_ROOT/src/hw/$REPOSITORY_NAME/" "$QEMU_DIR/hw/misc/"
+ln -sf "$REPOSITORY_ROOT/include/hw/pciemu_hw.h" "$REPOSITORY_ROOT/src/hw/$REPOSITORY_NAME/pciemu_hw.h"
 
 # Configure QEMU
-cd "$QEMU_DIR" || error_exit "Failed to change directory to $QEMU_DIR."
+cd "$QEMU_DIR" || error_exit "Failed to change directory to $QEMU_DIR"
 ./configure --target-list=aarch64-softmmu \
---disable-bsd-user \
---disable-guest-agent \
---disable-gtk \
---disable-werror \
---enable-vde \
---enable-virtfs || error_exit "QEMU configuration failed."
+  --disable-bsd-user \
+  --disable-guest-agent \
+  --disable-gtk \
+  --disable-werror \
+  --enable-vde \
+  --enable-virtfs || error_exit "QEMU configuration failed"
 
-{ set +x; } 2>/dev/null  # Disable tracing temporarily
-printf '%s\n' "Setup finished. You may now build QEMU (cd $QEMU_DIR && make -j\$(nproc))"
+echo "Setup finished. You may now build QEMU (cd $QEMU_DIR && make -j\$(nproc))"
