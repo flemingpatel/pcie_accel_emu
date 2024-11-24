@@ -29,3 +29,4 @@ QEMU_DIR="$REPOSITORY_ROOT/submodules/qemu"
 # Export common variables for scripts
 export REPOSITORY_ROOT BUILDROOT_DIR QEMU_DIR
 export -f error_exit require_tool
+

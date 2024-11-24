@@ -64,3 +64,4 @@ cd "$QEMU_DIR" || error_exit "Failed to change directory to $QEMU_DIR"
   --enable-virtfs || error_exit "QEMU configuration failed"
 
 echo "Setup finished. You may now build QEMU (cd $QEMU_DIR && make -j\$(nproc))"
+
