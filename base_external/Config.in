@@ -1,0 +1,1 @@
+source "$BR2_EXTERNAL_project_base_PATH/package/pcie_accel_emu/Config.in"

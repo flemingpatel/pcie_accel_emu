@@ -1,6 +1,7 @@
 /**
  * pcie_accel_emu_hw.h
- * Provides hardware definitions.
+ * Provides hardware definitions
+ * Author: Fleming Patel
  *
  */
 
@@ -8,7 +9,7 @@
 #define PCIEMU_HW_H
 
 #include <linux/pci_regs.h>
-#include <linux/types.h>
+
 
 /**
  * --------------------------------------------------------------------------------
@@ -45,19 +46,35 @@
 #define PCIEMU_HW_BAR0_IRQ_0_RAISE  0x20
 #define PCIEMU_HW_BAR0_IRQ_0_LOWER  0x28
 
-/* DMA Configuration General Purpose Registers */
+/* DMA Configuration Registers */
 #define PCIEMU_HW_BAR0_DMA_CFG_TXDESC_SRC   0x30
 #define PCIEMU_HW_BAR0_DMA_CFG_TXDESC_DST   0x38
 #define PCIEMU_HW_BAR0_DMA_CFG_TXDESC_LEN   0x40
 #define PCIEMU_HW_BAR0_DMA_CFG_CMD          0x48
 #define PCIEMU_HW_BAR0_DMA_DOORBELL_RING    0x50
 
-/* After doorbell user does AI ops */
-#define PCIEMU_HW_BAR0_AI_MODEL_CONTROL     0x58
+/*
+ * AI Model Management Registers
+ * The device will do internal DMA from these registers (for now),
+ * however, we will use them as offset to utilize the shared DMA buffer (above registers) in the future.
+ * In theory, we may not need size registers (TODO).
+ */
+#define PCIEMU_HW_BAR0_AI_MODEL_LOAD_ADDR     0x58  /* Address to load the model from */
+#define PCIEMU_HW_BAR0_AI_MODEL_LOAD_SIZE     0x60  /* Size of the model to load */
+
+/* AI Inference Registers */
+#define PCIEMU_HW_BAR0_AI_INPUT_ADDR          0x68  /* Address of input data */
+#define PCIEMU_HW_BAR0_AI_INPUT_SIZE          0x70  /* Size of input data */
+#define PCIEMU_HW_BAR0_AI_OUTPUT_ADDR         0x78  /* Address for output data */
+#define PCIEMU_HW_BAR0_AI_OUTPUT_SIZE         0x80  /* Size for output data */
+#define PCIEMU_HW_BAR0_AI_BATCH_SIZE          0x88  /* Batch size for inference */
+
+/* After doorbell user does model ops */
+#define PCIEMU_HW_BAR0_MODEL_CONTROL          0x90  /* Control register for model operations */
 
 /* MMIO BAR Boundaries */
 #define PCIEMU_HW_BAR0_START    PCIEMU_HW_BAR0_REG_0
-#define PCIEMU_HW_BAR0_END      PCIEMU_HW_BAR0_AI_MODEL_CONTROL
+#define PCIEMU_HW_BAR0_END      PCIEMU_HW_BAR0_MODEL_CONTROL
 
 /**
  * --------------------------------------------------------------------------------
@@ -97,10 +114,6 @@
 #define PCIEMU_HW_IRQ_MODEL_UNLOADED_VECTOR 2   /* Vector for model unloaded */
 #define PCIEMU_HW_IRQ_INFERENCE_DONE_VECTOR 3   /* Vector for inference completion */
 
-/* IRQ Addresses for Acknowledgment */
-#define PCIEMU_HW_IRQ_DMA_ENDED_ADDR    PCIEMU_HW_BAR0_IRQ_0_RAISE
-#define PCIEMU_HW_IRQ_DMA_ACK_ADDR      PCIEMU_HW_BAR0_IRQ_0_LOWER
-
 /**
  * --------------------------------------------------------------------------------
  * Custom AI Control Commands
@@ -117,7 +130,7 @@
  * Constants for AI Operations
  * --------------------------------------------------------------------------------
  */
-#define PCIEMU_HW_AI_MAX_MODEL_SIZE 0x100000    /* 1 MB */
-#define PCIEMU_HW_AI_MAX_BATCH_SIZE 1024        /* Maximum number of inputs in a batch */
+#define PCIEMU_HW_AI_MAX_MODEL_SIZE 0x10000 /* 65 KB */
+#define PCIEMU_HW_AI_MAX_BATCH_SIZE 4       /* Maximum number of inputs in a batch */
 
 #endif /* PCIEMU_HW_H */

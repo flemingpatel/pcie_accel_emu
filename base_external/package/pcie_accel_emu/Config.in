@@ -1,0 +1,4 @@
+config BR2_PACKAGE_PCIE_ACCEL_EMU
+    bool "pcie_accel_emu"
+    help
+        Build the pcie_accel_emu kernel module to drive the virtual pciemu device for custom AI acceleration

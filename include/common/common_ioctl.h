@@ -1,6 +1,7 @@
 /**
  * common_ioctl.h
- * Provides common IOCTL definitions.
+ * Provides common IOCTL definitions
+ * Author: Fleming Patel
  *
  */
 
@@ -41,13 +42,11 @@ struct vai_run_inference_arg
 /* IOCTL Magic Number */
 #define PCIE_ACCEL_EMU_IOCTL_MAGIC 0xE1
 
-/* DMA */
-#define PCIE_ACCEL_EMU_IOCTL_DMA_TO_DEVICE _IOW(PCIE_ACCEL_EMU_IOCTL_MAGIC, 1, void *)
-#define PCIE_ACCEL_EMU_IOCTL_DMA_FROM_DEVICE _IOR(PCIE_ACCEL_EMU_IOCTL_MAGIC, 2, void *)
-
-/* AI */
+/* Buffer */
 #define PCIE_ACCEL_EMU_IOCTL_ALLOC_BUFFER _IOWR(PCIE_ACCEL_EMU_IOCTL_MAGIC, 3, struct vai_alloc_buffer_arg)
 #define PCIE_ACCEL_EMU_IOCTL_FREE_BUFFER _IOW(PCIE_ACCEL_EMU_IOCTL_MAGIC, 4, uint64_t)
+
+/* Model */
 #define PCIE_ACCEL_EMU_IOCTL_LOAD_MODEL _IOW(PCIE_ACCEL_EMU_IOCTL_MAGIC, 5, struct vai_load_model_arg)
 #define PCIE_ACCEL_EMU_IOCTL_UNLOAD_MODEL _IOW(PCIE_ACCEL_EMU_IOCTL_MAGIC, 6, uint32_t)
 #define PCIE_ACCEL_EMU_IOCTL_RUN_INFERENCE _IOW(PCIE_ACCEL_EMU_IOCTL_MAGIC, 7, struct vai_run_inference_arg)

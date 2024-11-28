@@ -1,5 +1,5 @@
 #!/bin/bash
-# setup_qemu.sh:  Setup QEMU for building pciemu
+# setup_qemu.sh:  Build custom QEMU binary that has custom pciemu device
 # Author:         Fleming Patel
 
 # Source shared definitions
@@ -63,5 +63,5 @@ cd "$QEMU_DIR" || error_exit "Failed to change directory to $QEMU_DIR"
   --enable-vde \
   --enable-virtfs || error_exit "QEMU configuration failed"
 
-echo "Setup finished. You may now build QEMU (cd $QEMU_DIR && make -j\$(nproc))"
-
+# Build qemu
+make -j$(nproc) || error_exit "QEMU build failed"

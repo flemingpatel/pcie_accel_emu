@@ -1,5 +1,5 @@
 #!/bin/bash
-# setup_buildroot.sh: Setup Buildroot for generating kernel image
+# setup_buildroot.sh: Build Buildroot for generating kernel image and rootfs
 # Author:             Fleming Patel
 
 # Source shared definitions
@@ -56,4 +56,3 @@ else
     make BR2_EXTERNAL="$REPOSITORY_ROOT/base_external"
   fi
 fi
-

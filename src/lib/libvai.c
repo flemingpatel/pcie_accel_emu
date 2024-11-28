@@ -1,6 +1,7 @@
 /**
  * libvai.c
  * User-space library implementation for driver interactions
+ * Author: Fleming Patel
  *
  */
 
