@@ -35,6 +35,7 @@ static void pciemu_reset(PCIEMUDevice *dev)
     pciemu_irq_reset(dev);
     pciemu_dma_reset(dev);
     pciemu_mmio_reset(dev);
+    pciemu_model_reset(dev);
 }
 
 /* -----------------------------------------------------------------------------
@@ -59,6 +60,7 @@ static void pciemu_device_init(PCIDevice *pci_dev, Error **errp)
     pciemu_irq_init(dev, errp);
     pciemu_dma_init(dev, errp);
     pciemu_mmio_init(dev, errp);
+    pciemu_model_init(dev, errp);
 }
 
 /**
@@ -77,6 +79,7 @@ static void pciemu_device_fini(PCIDevice *pci_dev)
     pciemu_irq_fini(dev);
     pciemu_dma_fini(dev);
     pciemu_mmio_fini(dev);
+    pciemu_model_fini(dev);
 }
 
 /**

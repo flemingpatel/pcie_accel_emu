@@ -15,6 +15,8 @@
 #include <stddef.h> // size_t
 #include <stdint.h> // uintx_t
 #include <stdbool.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 
 #endif /* BASE_H */

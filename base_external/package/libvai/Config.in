@@ -1,0 +1,4 @@
+config BR2_PACKAGE_LIBVAI
+    bool "libvai"
+    help
+        Build the libvai library and example app (uses libvai) which communicates with the device via driver ioctl

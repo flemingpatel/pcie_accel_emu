@@ -109,21 +109,21 @@
 #define PCIEMU_HW_IRQ_INTX  0   /* INTA# */
 
 /* IRQ Vectors for Specific Events */
-#define PCIEMU_HW_IRQ_DMA_ENDED_VECTOR      0   /* Vector for DMA completion */
-#define PCIEMU_HW_IRQ_MODEL_LOADED_VECTOR   1   /* Vector for model loaded */
-#define PCIEMU_HW_IRQ_MODEL_UNLOADED_VECTOR 2   /* Vector for model unloaded */
-#define PCIEMU_HW_IRQ_INFERENCE_DONE_VECTOR 3   /* Vector for inference completion */
+#define PCIEMU_HW_IRQ_DMA_ENDED_VECTOR              0   /* Vector for DMA completion */
+#define PCIEMU_HW_IRQ_MODEL_LOADED_VECTOR           1   /* Vector for model loaded */
+#define PCIEMU_HW_IRQ_MODEL_UNLOADED_VECTOR         2   /* Vector for model unloaded */
+#define PCIEMU_HW_IRQ_MODEL_INFERENCE_DONE_VECTOR   3   /* Vector for inference completion */
 
 /**
  * --------------------------------------------------------------------------------
- * Custom AI Control Commands
+ * Custom Model Control Commands
  * (We can do DMA directly from them without using a doorbell,
  * and can have dedicated registers)
  * --------------------------------------------------------------------------------
  */
-#define PCIEMU_HW_AI_CMD_LOAD_MODEL     0x3 /* Command to load a model */
-#define PCIEMU_HW_AI_CMD_UNLOAD_MODEL   0x4 /* Command to unload a model */
-#define PCIEMU_HW_AI_CMD_RUN_INFERENCE  0x5 /* Command to run inference */
+#define PCIEMU_HW_MODEL_CMD_LOAD_MODEL     0x3 /* Command to load a model */
+#define PCIEMU_HW_MODEL_CMD_UNLOAD_MODEL   0x4 /* Command to unload a model */
+#define PCIEMU_HW_MODEL_CMD_RUN_INFERENCE  0x5 /* Command to run inference */
 
 /**
  * --------------------------------------------------------------------------------

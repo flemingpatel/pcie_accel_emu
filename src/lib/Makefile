@@ -14,7 +14,13 @@ LIB_SHARED := libvai.so
 SRC := libvai.c
 OBJ := $(SRC:.c=.o)
 
-all: $(LIB_STATIC) $(LIB_SHARED)
+# Example application
+EXAMPLE := example
+EXAMPLE_SRC := example.c
+EXAMPLE_OBJ := $(EXAMPLE_SRC:.c=.o)
+
+#all: $(LIB_STATIC) $(LIB_SHARED) $(EXAMPLE)
+all: $(LIB_SHARED) $(EXAMPLE)
 
 $(LIB_STATIC): $(OBJ)
 	$(AR) $(ARFLAGS) $@ $^
@@ -22,8 +28,11 @@ $(LIB_STATIC): $(OBJ)
 $(LIB_SHARED): $(OBJ)
 	$(CC) -shared -o $@ $^
 
+$(EXAMPLE): $(EXAMPLE_OBJ) $(LIB_SHARED)
+	$(CC) -o $@ $< -L. -lvai $(CFLAGS) $(INCLUDES)
+
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
-	rm -f $(LIB_STATIC) $(LIB_SHARED) $(OBJ)
+	rm -f $(LIB_STATIC) $(LIB_SHARED) $(OBJ) $(EXAMPLE) $(EXAMPLE_OBJ)

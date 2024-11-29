@@ -8,7 +8,7 @@
 #ifndef LIBVAI_H
 #define LIBVAI_H
 
-#include "../../include/common/common_ioctl.h"
+#include "common/common_ioctl.h"
 
 
 /**

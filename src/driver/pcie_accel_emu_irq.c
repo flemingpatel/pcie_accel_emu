@@ -50,7 +50,7 @@ static irqreturn_t pcie_accel_emu_irq_handler(int irq, void *data)
             complete(&pemu_dev->model_ctrl_done);
             break;
 
-        case PCIEMU_HW_IRQ_INFERENCE_DONE_VECTOR:
+        case PCIEMU_HW_IRQ_MODEL_INFERENCE_DONE_VECTOR:
             dev_info(&pemu_dev->pdev->dev, "irq_handler - inference done interrupt\n");
             /* complete the operation */
             complete(&pemu_dev->model_ctrl_done);
@@ -58,7 +58,7 @@ static irqreturn_t pcie_accel_emu_irq_handler(int irq, void *data)
 
         default:
             // it won't hit this
-            break;
+            return IRQ_NONE;
     }
 
     /* acknowledge the interrupt by writing the vector number to the ACK address */

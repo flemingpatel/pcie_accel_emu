@@ -15,6 +15,7 @@
 #include "pciemu_hw.h"
 #include "dma.h"
 #include "irq.h"
+#include "model.h"
 
 
 #define TYPE_PCIEMU_DEVICE "pciemu"
@@ -55,6 +56,9 @@ typedef struct PCIEMUDevice
 
     /* Registers in BAR0 */
     uint64_t reg[PCIEMU_HW_BAR0_REG_CNT];
+
+    /* Model Engine */
+    ModelEngine model_engine;
 } PCIEMUDevice;
 
 #endif /* PCIEMU_H */

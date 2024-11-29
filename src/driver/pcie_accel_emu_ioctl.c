@@ -20,6 +20,24 @@ long pcie_accel_emu_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 
     switch (cmd)
     {
+        case PCIE_ACCEL_EMU_IOCTL_ALLOC_BUFFER:
+            break;
+
+        case PCIE_ACCEL_EMU_IOCTL_FREE_BUFFER:
+            break;
+
+        case PCIE_ACCEL_EMU_IOCTL_LOAD_MODEL:
+            /* signal the device to process the loaded model */
+            iowrite32(PCIEMU_HW_MODEL_CMD_LOAD_MODEL, pemu_dev->bar.mmio + PCIEMU_HW_BAR0_MODEL_CONTROL);
+            /* wait for device to acknowledge model load via IRQ */
+            wait_for_completion(&pemu_dev->model_ctrl_done);
+
+        case PCIE_ACCEL_EMU_IOCTL_UNLOAD_MODEL:
+            break;
+
+        case PCIE_ACCEL_EMU_IOCTL_RUN_INFERENCE:
+            break;
+
         default:
             ret = -ENOTTY;
     }

@@ -5,7 +5,7 @@
  *
  */
 
-#include "../../include/lib/libvai.h"
+#include "lib/libvai.h"
 
 
 /* Allocates a buffer in the device */
