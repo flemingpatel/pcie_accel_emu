@@ -1,8 +1,9 @@
-/**
- * pcie_accel_emu_hw.h
- * Provides hardware definitions
- * Author: Fleming Patel
+/*
+ * pcie_accel_emu_hw.h: Provides hardware definitions
  *
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (C) 2024 Fleming Patel
  */
 
 #ifndef PCIEMU_HW_H

@@ -1,8 +1,9 @@
-/**
- * pcie_accel_emu_irq.c
- * Driver IRQ related implementation
- * Author: Fleming Patel
+/*
+ * pcie_accel_emu_irq.c: Driver IRQ related implementation
  *
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (C) 2024 Fleming Patel
  */
 
 #include "driver/pcie_accel_emu_module.h"
@@ -14,7 +15,7 @@ static irqreturn_t pcie_accel_emu_irq_handler(int irq, void *data)
     struct pcie_accel_emu_dev *pemu_dev = data;
     int vector = -1;
 
-    dev_info(&pemu_dev->pdev->dev, "irq_handler - irq = %d dev = %d\n", irq, pemu_dev->major);
+    dev_info(&pemu_dev->pdev->dev, "%s: irq = %d dev = %d", __func__, irq, pemu_dev->major);
 
     /* identify which vector triggered the interrupt */
     for (int i = 0; i < PCIEMU_HW_IRQ_CNT; i++)
@@ -28,7 +29,7 @@ static irqreturn_t pcie_accel_emu_irq_handler(int irq, void *data)
 
     if (vector == -1)
     {
-        dev_warn(&pemu_dev->pdev->dev, "irq_handler - unhandled irq = %d dev = %d\n", irq, pemu_dev->major);
+        dev_warn(&pemu_dev->pdev->dev, "%s: unhandled irq = %d dev = %d", __func__, irq, pemu_dev->major);
         return IRQ_NONE;
     }
 
@@ -39,19 +40,19 @@ static irqreturn_t pcie_accel_emu_irq_handler(int irq, void *data)
     switch (vector)
     {
         case PCIEMU_HW_IRQ_MODEL_LOADED_VECTOR:
-            dev_info(&pemu_dev->pdev->dev, "irq_handler - model load interrupt\n");
+            dev_info(&pemu_dev->pdev->dev, "irq_handler - model load interrupt");
             /* complete the operation */
             complete(&pemu_dev->model_ctrl_done);
             break;
 
         case PCIEMU_HW_IRQ_MODEL_UNLOADED_VECTOR:
-            dev_info(&pemu_dev->pdev->dev, "irq_handler - model unload interrupt\n");
+            dev_info(&pemu_dev->pdev->dev, "irq_handler - model unload interrupt");
             /* complete the operation */
             complete(&pemu_dev->model_ctrl_done);
             break;
 
         case PCIEMU_HW_IRQ_MODEL_INFERENCE_DONE_VECTOR:
-            dev_info(&pemu_dev->pdev->dev, "irq_handler - inference done interrupt\n");
+            dev_info(&pemu_dev->pdev->dev, "irq_handler - inference done interrupt");
             /* complete the operation */
             complete(&pemu_dev->model_ctrl_done);
             break;
@@ -72,20 +73,19 @@ static int pcie_accel_emu_irq_enable_msi(struct pcie_accel_emu_dev *pemu_dev)
     int msi_vecs;
     int err;
 
-    dev_dbg(&pemu_dev->pdev->dev, "pcie_accel_emu_irq_enable_msi - requesting %d MSI vectors\n", msi_vecs_req);
+    dev_info(&pemu_dev->pdev->dev, "%s: requesting %d MSI vectors", __func__, msi_vecs_req);
 
     msi_vecs = pci_alloc_irq_vectors(pemu_dev->pdev, msi_vecs_req, msi_vecs_req, PCI_IRQ_MSI);
     if (msi_vecs < 0)
     {
-        dev_err(&pemu_dev->pdev->dev, "pcie_accel_emu_irq_enable_msi - failed, vectors %d\n", msi_vecs);
+        dev_err(&pemu_dev->pdev->dev, "%s: failed, vectors %d", __func__, msi_vecs);
         return -ENOSPC;
     }
 
     if (msi_vecs != msi_vecs_req)
     {
         pci_free_irq_vectors(pemu_dev->pdev);
-        dev_err(&pemu_dev->pdev->dev, "pcie_accel_emu_irq_enable_msi - allocated %d MSI (out of %d requested)\n",
-                msi_vecs, msi_vecs_req);
+        dev_err(&pemu_dev->pdev->dev, "%s: allocated %d MSI (out of %d requested)", __func__, msi_vecs, msi_vecs_req);
         return -ENOSPC;
     }
 
@@ -99,7 +99,7 @@ static int pcie_accel_emu_irq_enable_msi(struct pcie_accel_emu_dev *pemu_dev)
         if (pemu_dev->irq.irq_nums[i] < 0)
         {
             pci_free_irq_vectors(pemu_dev->pdev);
-            dev_err(&pemu_dev->pdev->dev, "pcie_accel_emu_irq_enable_msi - vector %d out of range\n", i);
+            dev_err(&pemu_dev->pdev->dev, "%s: vector %d out of range", __func__, i);
             return -EINVAL;
         }
 
@@ -107,8 +107,8 @@ static int pcie_accel_emu_irq_enable_msi(struct pcie_accel_emu_dev *pemu_dev)
                           pemu_dev);
         if (err)
         {
-            dev_err(&pemu_dev->pdev->dev, "pcie_accel_emu_irq_enable_msi - failed to request irq %d (%d)\n",
-                    pemu_dev->irq.irq_nums[i], err);
+            dev_err(&pemu_dev->pdev->dev, "%s: failed to request irq %d (%d)", __func__, pemu_dev->irq.irq_nums[i],
+                    err);
             pci_free_irq_vectors(pemu_dev->pdev);
             return err;
         }
@@ -131,11 +131,11 @@ void pcie_accel_emu_irq_disable(struct pcie_accel_emu_dev *pemu_dev)
         if (pemu_dev->irq.irq_nums[i] > 0)
         {
             free_irq(pemu_dev->irq.irq_nums[i], pemu_dev);
-            dev_dbg(&pemu_dev->pdev->dev, "pcie_accel_emu_irq_disable - freed IRQ %d\n", pemu_dev->irq.irq_nums[i]);
+            dev_dbg(&pemu_dev->pdev->dev, "%s: freed IRQ %d", __func__, pemu_dev->irq.irq_nums[i]);
         }
     }
 
     /* free the MSI vectors */
     pci_free_irq_vectors(pemu_dev->pdev);
-    dev_dbg(&pemu_dev->pdev->dev, "pcie_accel_emu_irq_disable - freed MSI vectors\n");
+    dev_dbg(&pemu_dev->pdev->dev, "%s: freed MSI vectors", __func__);
 }

@@ -1,8 +1,9 @@
-/**
- * common_ioctl.h
- * Provides common IOCTL definitions
- * Author: Fleming Patel
+/*
+ * common_ioctl.h: Provides common IOCTL definitions for user-space and driver
  *
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (C) 2024 Fleming Patel
  */
 
 #ifndef COMMON_IOCTL_H

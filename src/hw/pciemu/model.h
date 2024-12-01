@@ -1,9 +1,10 @@
-/* model.h
+/*
+ * model.h
  *
- * Author: Fleming Patel
+ * SPDX-License-Identifier: GPL-2.0
  *
+ * Copyright (C) 2024 Fleming Patel
  */
-
 
 #ifndef PCIEMU_MODEL_H
 #define PCIEMU_MODEL_H

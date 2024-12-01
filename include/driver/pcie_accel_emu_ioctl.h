@@ -1,8 +1,9 @@
-/**
- * pcie_accel_emu_ioctl.h
- * Provides driver IOCTL interface related definitions
- * Author: Fleming Patel
+/*
+ * pcie_accel_emu_ioctl.h: Provides driver IOCTL interface related definitions
  *
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (C) 2024 Fleming Patel
  */
 
 #ifndef PCIE_ACCEL_EMU_IOCTL_H

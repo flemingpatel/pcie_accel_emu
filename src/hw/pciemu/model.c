@@ -1,7 +1,9 @@
-/* model.c
+/*
+ * model.c
  *
- * Author: Fleming Patel
+ * SPDX-License-Identifier: GPL-2.0
  *
+ * Copyright (C) 2024 Fleming Patel
  */
 
 #include "model.h"

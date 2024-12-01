@@ -1,8 +1,9 @@
-/**
- * libvai.c
- * User-space library implementation for driver interactions
- * Author: Fleming Patel
+/*
+ * libvai.c: User-space library implementation for driver interactions
  *
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (C) 2024 Fleming Patel
  */
 
 #include "lib/libvai.h"

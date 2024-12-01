@@ -19,7 +19,7 @@ PCIE_ACCEL_EMU_LICENSE = GPLv2
 PCIE_ACCEL_EMU_MODULES = pcie_accel_emu
 
 # pass additional include directory
-PCIE_ACCEL_EMU_MODULE_MAKE_OPTS = KCFLAGS+="-I$(PROJECT_ROOT)/include"
+PCIE_ACCEL_EMU_MODULE_MAKE_OPTS = EXTRA_CFLAGS+="-I$(PROJECT_ROOT)/include -DDEBUG=y"
 
 $(eval $(kernel-module))
 $(eval $(generic-package))

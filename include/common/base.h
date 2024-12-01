@@ -1,8 +1,9 @@
-/**
- * base.h
- * Provides common includes for user-space
- * Author: Fleming Patel
+/*
+ * base.h: Provides common includes for user-space
  *
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (C) 2024 Fleming Patel
  */
 
 #ifndef BASE_H

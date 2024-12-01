@@ -1,8 +1,9 @@
-/**
- * libvai.h
- * User-space library header;
- * provides function prototypes to interact with the driver via IOCTL.
+/*
+ * libvai.h: User-space library header; provides function prototypes to interact with the driver via IOCTL
  *
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (C) 2024 Fleming Patel
  */
 
 #ifndef LIBVAI_H

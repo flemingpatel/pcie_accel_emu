@@ -1,8 +1,9 @@
-/**
- * example.c
- * User-space example that uses libvai and communicates with the device via driver ioctl
- * Author: Fleming Patel
+/*
+ * example.c: User-space example that uses libvai and communicates with the device via driver ioctl
  *
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (C) 2024 Fleming Patel
  */
 
 #include "lib/libvai.h"

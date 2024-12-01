@@ -1,8 +1,9 @@
-/**
- * pcie_accel_emu.h
- * Provides driver module definitions
- * Author: Fleming Patel
+/*
+ * pcie_accel_emu.h: Provides driver module definitions
  *
+ * SPDX-License-Identifier: GPL-2.0
+ *
+ * Copyright (C) 2024 Fleming Patel
  */
 
 #ifndef PCIE_ACCEL_EMU_MODULE_H
@@ -18,6 +19,7 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/uaccess.h>
+#include <linux/genalloc.h>
 
 
 /* forward declaration */
@@ -53,25 +55,12 @@ struct pcie_accel_emu_model
     struct list_head list;
 };
 
-/*
- * Buffer Region Structure
- * Not currently used anywhere because looking at genalloc/genpool subsystem instead of custom logic (TODO)
- */
-struct pcie_accel_emu_buffer_region
-{
-    size_t start;              /* Start offset within the DMA area */
-    size_t size;               /* Size of the region in bytes */
-    bool free;                 /* Allocation status: true if free, false if allocated */
-    struct list_head list;     /* Linked list node for inclusion in region_list */
-};
-
 struct pcie_accel_emu_buffer
 {
     uint64_t handle;                                /* Unique handle for the buffer */
     size_t size;                                    /* Size of the buffer in bytes */
     dma_addr_t dma_handle;                          /* DMA address */
-    size_t region_offset;                           /* Offset within the DMA area */
-    struct pcie_accel_emu_buffer_region *region;    /* Pointer to the associated region */
+    void *cpu_addr;                                 /* CPU-accessible address */
     struct list_head list;                          /* Linked list node */
 };
 
@@ -106,8 +95,15 @@ struct pcie_accel_emu_dev
     struct list_head region_list;
     struct mutex region_list_lock;
 
-    /* Device memory address for DMA operations */
-    u64 device_memory_address;
+    /*
+     * DMA Memory Pool
+     * we will use it to allocate buffer and get dma handle,
+     * however, we will not use as device internal buffer offset for simplicity(TODO)
+     */
+    size_t dma_area_size;               /* Size of DMA memory */
+    void *dma_area_cpu_addr;            /* CPU virtual address of DMA memory */
+    dma_addr_t dma_area_phys_addr;      /* Physical address of DMA memory */
+    struct gen_pool *dma_pool;          /* genalloc pool for DMA memory */
 };
 
 
