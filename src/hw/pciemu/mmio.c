@@ -129,6 +129,18 @@ static void pciemu_mmio_write(void *opaque, hwaddr addr, uint64_t val,
         case PCIEMU_HW_BAR0_DMA_DOORBELL_RING:
             pciemu_dma_doorbell_ring(dev);
             break;
+        case PCIEMU_HW_BAR0_MODEL_LOAD_ADDR:
+            pciemu_model_load_addr(dev, val);
+            break;
+        case PCIEMU_HW_BAR0_MODEL_LOAD_SIZE:
+            pciemu_model_load_size(dev, val);
+            break;
+        case PCIEMU_HW_BAR0_MODEL_OUTPUT_ADDR:
+            pciemu_model_output_addr(dev, val);
+            break;
+        case PCIEMU_HW_BAR0_MODEL_OUTPUT_SIZE:
+            pciemu_model_output_size(dev, val);
+            break;
         case PCIEMU_HW_BAR0_MODEL_CONTROL:
             pciemu_model_control(dev, val);
             break;

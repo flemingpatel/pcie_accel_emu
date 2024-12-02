@@ -79,8 +79,8 @@ static int pcie_accel_emu_irq_enable_msi(struct pcie_accel_emu_dev *pemu_dev)
 
 	if (msi_vecs != msi_vecs_req) {
 		pci_free_irq_vectors(pemu_dev->pdev);
-		dev_err(&pemu_dev->pdev->dev, "%s: allocated %d MSI (out of %d requested)",
-			__func__, msi_vecs, msi_vecs_req);
+		dev_err(&pemu_dev->pdev->dev, "%s: allocated %d MSI (out of %d requested)", __func__,
+			msi_vecs, msi_vecs_req);
 		return -ENOSPC;
 	}
 

@@ -13,21 +13,63 @@
 #include <linux/fs.h>
 
 /* forward declaration */
-typedef struct pcie_accel_emu_dev pcie_accel_emu_dev;
+struct pcie_accel_emu_dev;
 
-/* IOCTL Buffer Handlers */
-long pcie_accel_emu_ioctl_alloc_buffer(pcie_accel_emu_dev *dev,
+/**
+ * @brief Handle buffer allocation IOCTL
+ *
+ * @param dev Pointer to the device structure
+ * @param arg User-space pointer to the allocation argument structure
+ * @return 0 on success or negative error code on failure
+ */
+long pcie_accel_emu_ioctl_alloc_buffer(struct pcie_accel_emu_dev *dev,
 				       struct vai_alloc_buffer_arg __user *arg);
-long pcie_accel_emu_ioctl_free_buffer(pcie_accel_emu_dev *dev, uint64_t __user *arg);
 
-/* IOCTL Model Handlers */
-long pcie_accel_emu_ioctl_load_model(pcie_accel_emu_dev *dev,
-				     struct vai_load_model_arg __user *arg);
-long pcie_accel_emu_ioctl_unload_model(pcie_accel_emu_dev *dev, uint32_t __user *arg);
-long pcie_accel_emu_ioctl_run_inference(pcie_accel_emu_dev *dev,
+/**
+ * @brief Handle buffer de-allocation IOCTL
+ *
+ * @param dev Pointer to the device structure
+ * @param arg User-space pointer to the buffer handle to free
+ * @return 0 on success or negative error code on failure
+ */
+long pcie_accel_emu_ioctl_free_buffer(struct pcie_accel_emu_dev *dev, uint64_t __user *arg);
+
+/**
+ * @brief Handle model loading IOCTL
+ *
+ * @param dev Pointer to the device structure
+ * @param arg User-space pointer to the model loading argument structure
+ * @return 0 on success or negative error code on failure
+ */
+long pcie_accel_emu_ioctl_load_model(struct pcie_accel_emu_dev *dev, struct vai_load_model_arg __user *arg);
+
+/**
+ * @brief Handle model unloading IOCTL
+ *
+ * @param dev Pointer to the device structure
+ * @param arg User-space pointer to the model ID to unload
+ * @return 0 on success or negative error code on failure
+ */
+long pcie_accel_emu_ioctl_unload_model(struct pcie_accel_emu_dev *dev, uint32_t __user *arg);
+
+/**
+ * @brief Handle inference execution IOCTL
+ *
+ * @param dev Pointer to the device structure
+ * @param arg User-space pointer to the inference argument structure
+ * @return 0 on success or negative error code on failure
+ */
+long pcie_accel_emu_ioctl_run_inference(struct pcie_accel_emu_dev *dev,
 					struct vai_run_inference_arg __user *arg);
 
-/* Main IOCTL Handler */
+/**
+ * @brief Main IOCTL handler; Dispatches IOCTL commands to the appropriate handler functions
+ *
+ * @param fp File pointer associated with the device
+ * @param cmd IOCTL command code
+ * @param arg Argument passed from user space
+ * @return 0 on success or negative error code on failure
+ */
 long pcie_accel_emu_ioctl(struct file *fp, unsigned int cmd, unsigned long arg);
 
 #endif /* PCIE_ACCEL_EMU_IOCTL_H */

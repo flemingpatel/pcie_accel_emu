@@ -15,7 +15,7 @@ ifneq ($(KERNELRELEASE),)
 	# this section is used when building within the kernel build system (e.g., Buildroot)
 	# define the project root relative to the kernel source tree
 	obj-m := pcie_accel_emu.o
-	pcie_accel_emu-objs := pcie_accel_emu_module.o pcie_accel_emu_irq.o pcie_accel_emu_ioctl.o
+	pcie_accel_emu-objs := pcie_accel_emu_module.o pcie_accel_emu_irq.o pcie_accel_emu_ioctl.o pcie_accel_emu_buffer.o
 else
 	# standalone build
 	KDIR ?= /lib/modules/$(shell uname -r)/build

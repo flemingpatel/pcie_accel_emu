@@ -26,4 +26,6 @@ cd "$QEMU_DIR/build" || error_exit "Failed to change directory to $QEMU_DIR/buil
     -append "rootwait root=/dev/vda console=ttyAMA0" \
     -drive file="$ROOTFS_IMAGE",if=none,format=raw,id=hd0 \
     -device virtio-blk-device,drive=hd0 -device virtio-rng-pci \
-    -device pciemu,id=pciemu1 || error_exit "QEMU startup failed"
+    -device pciemu,id=pciemu1 \
+    -d guest_errors \
+    -D qemu.log || error_exit "QEMU startup failed"

@@ -20,28 +20,11 @@ static struct pci_device_id pcie_accel_emu_id_tbl[] = {
 	{},
 };
 
-/* Helper to find buffer */
-struct pcie_accel_emu_buffer *find_buffer_by_handle(struct pcie_accel_emu_dev *dev, uint64_t handle)
-{
-	struct pcie_accel_emu_buffer *buffer;
-
-	mutex_lock(&dev->buffer_list_lock);
-	list_for_each_entry(buffer, &dev->buffer_list, list) {
-		if (buffer->handle == handle) {
-			mutex_unlock(&dev->buffer_list_lock);
-			return buffer;
-		}
-	}
-	mutex_unlock(&dev->buffer_list_lock);
-	return NULL;
-}
-
 /* Open File */
 static int pcie_accel_emu_open(struct inode *inode, struct file *fp)
 {
 	unsigned int bar = iminor(inode);
-	struct pcie_accel_emu_dev *pemu_dev =
-		container_of(inode->i_cdev, struct pcie_accel_emu_dev, cdev);
+	struct pcie_accel_emu_dev *pemu_dev = container_of(inode->i_cdev, struct pcie_accel_emu_dev, cdev);
 	dev_info(&pemu_dev->pdev->dev, "%s: requested BAR: %u, device minor: %d", __func__, bar,
 		 MINOR(inode->i_rdev));
 	/* only BAR 0 operations */
@@ -79,9 +62,8 @@ static int pcie_accel_emu_mmap(struct file *fp, struct vm_area_struct *vma)
 	if (vma->vm_end - vma->vm_start > buffer->size)
 		return -EINVAL;
 
-	/* remap the DMA buffer into user-space */
-	if (remap_pfn_range(vma, vma->vm_start, pfn, vma->vm_end - vma->vm_start,
-			    vma->vm_page_prot))
+	/* remap the buffer into user-space */
+	if (remap_pfn_range(vma, vma->vm_start, pfn, vma->vm_end - vma->vm_start, vma->vm_page_prot))
 		return -EAGAIN;
 
 	return 0;
@@ -91,8 +73,8 @@ static int pcie_accel_emu_mmap(struct file *fp, struct vm_area_struct *vma)
 static const struct file_operations pcie_accel_emu_fops = {
 	.owner = THIS_MODULE,
 	.open = pcie_accel_emu_open,
-	.mmap = pcie_accel_emu_mmap,
 	.unlocked_ioctl = pcie_accel_emu_ioctl,
+	.mmap = pcie_accel_emu_mmap,
 };
 
 static void pcie_accel_emu_dev_clean(struct pcie_accel_emu_dev *pemu_dev)
@@ -115,13 +97,7 @@ static void pcie_accel_emu_dev_clean(struct pcie_accel_emu_dev *pemu_dev)
 	mutex_unlock(&pemu_dev->model_list_lock);
 
 	/* clean up buffer_list */
-	struct pcie_accel_emu_buffer *buffer, *next_buffer;
-	mutex_lock(&pemu_dev->buffer_list_lock);
-	list_for_each_entry_safe(buffer, next_buffer, &pemu_dev->buffer_list, list) {
-		list_del(&buffer->list);
-		kfree(buffer);
-	}
-	mutex_unlock(&pemu_dev->buffer_list_lock);
+	free_all_buffers(pemu_dev);
 
 	/* clean up gen_pool and DMA memory */
 	if (pemu_dev->dma_pool) {
@@ -130,8 +106,8 @@ static void pcie_accel_emu_dev_clean(struct pcie_accel_emu_dev *pemu_dev)
 	}
 
 	if (pemu_dev->dma_area_cpu_addr) {
-		dma_free_coherent(&pemu_dev->pdev->dev, pemu_dev->dma_area_size,
-				  pemu_dev->dma_area_cpu_addr, pemu_dev->dma_area_phys_addr);
+		dma_free_coherent(&pemu_dev->pdev->dev, pemu_dev->dma_area_size, pemu_dev->dma_area_cpu_addr,
+				  pemu_dev->dma_area_phys_addr);
 		pemu_dev->dma_area_size = 0;
 		pemu_dev->dma_area_cpu_addr = NULL;
 		pemu_dev->dma_area_phys_addr = 0;
@@ -150,8 +126,8 @@ static int pcie_accel_emu_dev_init(struct pcie_accel_emu_dev *pemu_dev, struct p
 	pemu_dev->bar.end = pci_resource_end(pdev, bar);
 	pemu_dev->bar.len = pci_resource_len(pdev, bar);
 	pemu_dev->bar.mmio = pci_iomap(pdev, bar, pemu_dev->bar.len);
-	dev_dbg(&pdev->dev, "%s: BAR%u start=%pa, end=%pa, len=%pa", __func__, bar,
-		&pemu_dev->bar.start, &pemu_dev->bar.end, &pemu_dev->bar.len);
+	dev_dbg(&pdev->dev, "%s: BAR%u start=%pa, end=%pa, len=%pa", __func__, bar, &pemu_dev->bar.start,
+		&pemu_dev->bar.end, &pemu_dev->bar.len);
 	if (!pemu_dev->bar.mmio) {
 		dev_err(&pdev->dev, "%s: cannot map BAR %u", __func__, bar);
 		pcie_accel_emu_dev_clean(pemu_dev);
@@ -184,8 +160,7 @@ static int pcie_accel_emu_dev_init(struct pcie_accel_emu_dev *pemu_dev, struct p
 		return -ENOMEM;
 	}
 	dev_dbg(&pdev->dev, "%s: allocated DMA area (virt=%p, phys=%pad, size=%zu)", __func__,
-		pemu_dev->dma_area_cpu_addr, &pemu_dev->dma_area_phys_addr,
-		pemu_dev->dma_area_size);
+		pemu_dev->dma_area_cpu_addr, &pemu_dev->dma_area_phys_addr, pemu_dev->dma_area_size);
 
 	/* initialize gen_pool */
 	pemu_dev->dma_pool = gen_pool_create(PAGE_SHIFT, -1); // PAGE_SHIFT granularity
@@ -217,8 +192,8 @@ static struct pcie_accel_emu_dev *pcie_accel_emu_alloc_dev(void)
 /* Probe Function */
 static int pcie_accel_emu_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
-	dev_info(&pdev->dev, "%s: probe started for Vendor ID=0x%04x, Device ID=0x%04x", __func__,
-		 id->vendor, id->device);
+	dev_info(&pdev->dev, "%s: probe started for Vendor ID=0x%04x, Device ID=0x%04x", __func__, id->vendor,
+		 id->device);
 
 	int err;
 	int mem_bars;
@@ -268,7 +243,7 @@ static int pcie_accel_emu_probe(struct pci_dev *pdev, const struct pci_device_id
 	/* initialize pcie_accel_emu_dev */
 	err = pcie_accel_emu_dev_init(pemu_dev, pdev);
 	if (err) {
-		dev_err(&pdev->dev, "%s: pcie_accel_emu_dev_init failed with", __func__);
+		dev_err(&pdev->dev, "%s: pcie_accel_emu_dev_init failed", __func__);
 		goto err_dev_init;
 	}
 
@@ -294,10 +269,9 @@ static int pcie_accel_emu_probe(struct pci_dev *pdev, const struct pci_device_id
 	}
 
 	/* create /dev/ node via udev */
-	dev = device_create(pcie_accel_emu_class, &pdev->dev,
-			    MKDEV(pemu_dev->major, pemu_dev->minor), pemu_dev, "d%xb%xd%xf%x_bar%u",
-			    pci_domain_nr(pdev->bus), pdev->bus->number, PCI_SLOT(pdev->devfn),
-			    PCI_FUNC(pdev->devfn), PCIEMU_HW_BAR0);
+	dev = device_create(pcie_accel_emu_class, &pdev->dev, MKDEV(pemu_dev->major, pemu_dev->minor),
+			    pemu_dev, "d%xb%xd%xf%x_bar%u", pci_domain_nr(pdev->bus), pdev->bus->number,
+			    PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn), PCIEMU_HW_BAR0);
 	if (IS_ERR(dev)) {
 		err = PTR_ERR(dev);
 		dev_err(&pdev->dev, "%s: device_create failed", __func__);
