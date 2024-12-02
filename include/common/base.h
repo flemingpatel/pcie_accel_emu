@@ -19,5 +19,4 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-
 #endif /* BASE_H */

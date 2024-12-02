@@ -12,15 +12,20 @@
 #include "common/common_ioctl.h"
 #include <linux/fs.h>
 
+/* forward declaration */
+typedef struct pcie_accel_emu_dev pcie_accel_emu_dev;
 
 /* IOCTL Buffer Handlers */
-long pcie_accel_emu_ioctl_alloc_buffer(struct file *fp, struct vai_alloc_buffer_arg __user *arg);
-long pcie_accel_emu_ioctl_free_buffer(struct file *fp, uint64_t __user *arg);
+long pcie_accel_emu_ioctl_alloc_buffer(pcie_accel_emu_dev *dev,
+				       struct vai_alloc_buffer_arg __user *arg);
+long pcie_accel_emu_ioctl_free_buffer(pcie_accel_emu_dev *dev, uint64_t __user *arg);
 
 /* IOCTL Model Handlers */
-long pcie_accel_emu_ioctl_load_model(struct file *fp, struct vai_load_model_arg __user *arg);
-long pcie_accel_emu_ioctl_unload_model(struct file *fp, uint32_t __user *arg);
-long pcie_accel_emu_ioctl_run_inference(struct file *fp, struct vai_run_inference_arg __user *arg);
+long pcie_accel_emu_ioctl_load_model(pcie_accel_emu_dev *dev,
+				     struct vai_load_model_arg __user *arg);
+long pcie_accel_emu_ioctl_unload_model(pcie_accel_emu_dev *dev, uint32_t __user *arg);
+long pcie_accel_emu_ioctl_run_inference(pcie_accel_emu_dev *dev,
+					struct vai_run_inference_arg __user *arg);
 
 /* Main IOCTL Handler */
 long pcie_accel_emu_ioctl(struct file *fp, unsigned int cmd, unsigned long arg);

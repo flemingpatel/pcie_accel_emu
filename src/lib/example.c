@@ -13,19 +13,17 @@
 
 int main()
 {
+	int fd;
+	/* open PCIEMU device */
+	fd = open(PCIEMU_DEVICE_PATH, O_RDWR);
+	if (fd < 0) {
+		perror("failed to open PCIEMU device");
+		return EXIT_FAILURE;
+	}
 
-    int fd;
-    /* open PCIEMU device */
-    fd = open(PCIEMU_DEVICE_PATH, O_RDWR);
-    if (fd < 0)
-    {
-        perror("failed to open PCIEMU device");
-        return EXIT_FAILURE;
-    }
+	/* sample test */
+	vai_load_model(fd, 0, 0, 0);
+	close(fd);
 
-    /* sample test */
-    vai_load_model(fd, 0, 0, 0);
-    close(fd);
-
-    return 0;
+	return 0;
 }

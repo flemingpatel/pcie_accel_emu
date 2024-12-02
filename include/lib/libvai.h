@@ -1,5 +1,6 @@
 /*
- * libvai.h: User-space library header; provides function prototypes to interact with the driver via IOCTL
+ * libvai.h: User-space library header;
+ * provides function prototypes to interact with the driver via IOCTL
  *
  * SPDX-License-Identifier: GPL-2.0
  *
@@ -10,7 +11,6 @@
 #define LIBVAI_H
 
 #include "common/common_ioctl.h"
-
 
 /**
  * @brief Allocates a buffer in the device.
@@ -60,6 +60,7 @@ int vai_unload_model(int fd, uint32_t model_id);
  * @param batch_size Number of inputs to process.
  * @return 0 on success, negative error code on failure.
  */
-int vai_run_inference(int fd, uint32_t model_id, uint64_t input_handle, uint64_t output_handle, uint32_t batch_size);
+int vai_run_inference(int fd, uint32_t model_id, uint64_t input_handle, uint64_t output_handle,
+		      uint32_t batch_size);
 
 #endif /* LIBVAI_H */
