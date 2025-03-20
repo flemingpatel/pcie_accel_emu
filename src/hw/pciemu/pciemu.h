@@ -57,6 +57,9 @@ typedef struct PCIEMUDevice
     /* Registers in BAR0 */
     uint64_t reg[PCIEMU_HW_BAR0_REG_CNT];
 
+    /* For BAR1 (dedicated device memory) */
+    MemoryRegion dev_mem;
+
     /* Model Engine */
     ModelEngine model_engine;
 } PCIEMUDevice;

@@ -23,14 +23,14 @@ static struct pci_device_id pcie_accel_emu_id_tbl[] = {
 /* Open File */
 static int pcie_accel_emu_open(struct inode *inode, struct file *fp)
 {
-	unsigned int bar = iminor(inode);
+	unsigned int bar0 = iminor(inode);
 	struct pcie_accel_emu_dev *pemu_dev = container_of(inode->i_cdev, struct pcie_accel_emu_dev, cdev);
-	dev_info(&pemu_dev->pdev->dev, "%s: requested BAR: %u, device minor: %d", __func__, bar,
+	dev_info(&pemu_dev->pdev->dev, "%s: requested BAR: %u, device minor: %d", __func__, bar0,
 		 MINOR(inode->i_rdev));
-	/* only BAR 0 operations */
-	if (bar != PCIEMU_HW_BAR0)
+	/* only BAR 0 operations are exposed */
+	if (bar0 != PCIEMU_HW_BAR0)
 		return -ENXIO;
-	if (pemu_dev->bar.len == 0)
+	if (pemu_dev->bars[bar0].len == 0)
 		return -EIO;
 	fp->private_data = pemu_dev;
 
@@ -81,11 +81,14 @@ static void pcie_accel_emu_dev_clean(struct pcie_accel_emu_dev *pemu_dev)
 {
 	dev_info(&pemu_dev->pdev->dev, "%s: cleaning dev resources", __func__);
 
-	pemu_dev->bar.start = 0;
-	pemu_dev->bar.end = 0;
-	pemu_dev->bar.len = 0;
-	if (pemu_dev->bar.mmio)
-		pci_iounmap(pemu_dev->pdev, pemu_dev->bar.mmio);
+	/* reset BARs and unmap */
+	for (int i = 0; i < PCIEMU_HW_BAR_CNT; i++) {
+		pemu_dev->bars[i].start = 0;
+		pemu_dev->bars[i].end = 0;
+		pemu_dev->bars[i].len = 0;
+		if (pemu_dev->bars[i].mmio)
+			pci_iounmap(pemu_dev->pdev, pemu_dev->bars[i].mmio);
+	}
 
 	/* clean up model_list */
 	struct pcie_accel_emu_model *model, *next_model;
@@ -99,41 +102,35 @@ static void pcie_accel_emu_dev_clean(struct pcie_accel_emu_dev *pemu_dev)
 	/* clean up buffer_list */
 	free_all_buffers(pemu_dev);
 
-	/* clean up gen_pool and DMA memory */
-	if (pemu_dev->dma_pool) {
-		gen_pool_destroy(pemu_dev->dma_pool);
-		pemu_dev->dma_pool = NULL;
-	}
-
-	if (pemu_dev->dma_area_cpu_addr) {
-		dma_free_coherent(&pemu_dev->pdev->dev, pemu_dev->dma_area_size, pemu_dev->dma_area_cpu_addr,
-				  pemu_dev->dma_area_phys_addr);
-		pemu_dev->dma_area_size = 0;
-		pemu_dev->dma_area_cpu_addr = NULL;
-		pemu_dev->dma_area_phys_addr = 0;
+	/* clean up gen_pool */
+	if (pemu_dev->device_mem_pool) {
+		gen_pool_destroy(pemu_dev->device_mem_pool);
+		pemu_dev->device_mem_pool = NULL;
 	}
 }
 
 static int pcie_accel_emu_dev_init(struct pcie_accel_emu_dev *pemu_dev, struct pci_dev *pdev)
 {
 	dev_info(&pdev->dev, "%s: initializing dev resources", __func__);
-
-	const unsigned int bar = PCIEMU_HW_BAR0;
 	pemu_dev->pdev = pdev;
 
-	/* Initialize struct with BAR 0 info */
-	pemu_dev->bar.start = pci_resource_start(pdev, bar);
-	pemu_dev->bar.end = pci_resource_end(pdev, bar);
-	pemu_dev->bar.len = pci_resource_len(pdev, bar);
-	pemu_dev->bar.mmio = pci_iomap(pdev, bar, pemu_dev->bar.len);
-	dev_dbg(&pdev->dev, "%s: BAR%u start=%pa, end=%pa, len=%pa", __func__, bar, &pemu_dev->bar.start,
-		&pemu_dev->bar.end, &pemu_dev->bar.len);
-	if (!pemu_dev->bar.mmio) {
-		dev_err(&pdev->dev, "%s: cannot map BAR %u", __func__, bar);
-		pcie_accel_emu_dev_clean(pemu_dev);
-		return -ENOMEM;
+	/* initialize bars based on loop indices */
+	for (int i = 0; i < PCIEMU_HW_BAR_CNT; i++) {
+		unsigned int bar = bar_ids[i];
+		pemu_dev->bars[i].start = pci_resource_start(pdev, bar);
+		pemu_dev->bars[i].end = pci_resource_end(pdev, bar);
+		pemu_dev->bars[i].len = pci_resource_len(pdev, bar);
+		dev_dbg(&pdev->dev, "%s: BAR%d start=%pa, end=%pa, len=%pa", __func__, bar,
+			&pemu_dev->bars[i].start, &pemu_dev->bars[i].end, &pemu_dev->bars[i].len);
+
+		pemu_dev->bars[i].mmio = pci_iomap(pdev, bar, pemu_dev->bars[i].len);
+		if (!pemu_dev->bars[i].mmio) {
+			dev_err(&pdev->dev, "%s: cannot map BAR%d", __func__, bar);
+			pcie_accel_emu_dev_clean(pemu_dev);
+			return -ENOMEM;
+		}
+		dev_dbg(&pdev->dev, "%s: mapped BAR%d MMIO at %p", __func__, bar, pemu_dev->bars[i].mmio);
 	}
-	dev_dbg(&pdev->dev, "%s: mapped BAR0 MMIO at %p", __func__, pemu_dev->bar.mmio);
 
 	/* initialize ioctl_lock */
 	mutex_init(&pemu_dev->ioctl_lock);
@@ -149,36 +146,23 @@ static int pcie_accel_emu_dev_init(struct pcie_accel_emu_dev *pemu_dev, struct p
 	INIT_LIST_HEAD(&pemu_dev->buffer_list);
 	mutex_init(&pemu_dev->buffer_list_lock);
 
-	/* allocate coherent DMA memory */
-	pemu_dev->dma_area_size = PCIEMU_HW_DMA_AREA_SIZE;
-	pemu_dev->dma_area_cpu_addr = dma_alloc_coherent(&pdev->dev, pemu_dev->dma_area_size,
-							 &pemu_dev->dma_area_phys_addr, GFP_KERNEL);
-	if (!pemu_dev->dma_area_cpu_addr) {
-		dev_err(&pdev->dev, "%s: failed to allocate DMA area (size=%zu)", __func__,
-			pemu_dev->dma_area_size);
-		pcie_accel_emu_dev_clean(pemu_dev);
-		return -ENOMEM;
-	}
-	dev_dbg(&pdev->dev, "%s: allocated DMA area (virt=%p, phys=%pad, size=%zu)", __func__,
-		pemu_dev->dma_area_cpu_addr, &pemu_dev->dma_area_phys_addr, pemu_dev->dma_area_size);
-
-	/* initialize gen_pool */
-	pemu_dev->dma_pool = gen_pool_create(PAGE_SHIFT, -1); // PAGE_SHIFT granularity
-	if (!pemu_dev->dma_pool) {
+	/* create a gen_pool over the dedicated device memory (BAR1) */
+	pemu_dev->device_mem_pool = gen_pool_create(PAGE_SHIFT, -1);	// PAGE_SHIFT granularity
+	if (!pemu_dev->device_mem_pool) {
 		dev_err(&pdev->dev, "%s: failed to create gen_pool", __func__);
 		pcie_accel_emu_dev_clean(pemu_dev);
 		return -ENOMEM;
 	}
-	dev_dbg(&pdev->dev, "%s: created DMA gen_pool at %p", __func__, pemu_dev->dma_pool);
+	dev_dbg(&pdev->dev, "%s: created DMA gen_pool at %p", __func__, pemu_dev->device_mem_pool);
 
-	/* add the DMA area to gen_pool */
-	if (gen_pool_add_virt(pemu_dev->dma_pool, (unsigned long)pemu_dev->dma_area_cpu_addr,
-			      pemu_dev->dma_area_phys_addr, pemu_dev->dma_area_size, -1)) {
+	/* add device memory region (BAR1) to gen_pool (device_mem_pool) */
+	if (gen_pool_add_virt(pemu_dev->device_mem_pool, (unsigned long)pemu_dev->bars[BAR_IDX_1].mmio,
+			      pemu_dev->bars[BAR_IDX_1].start, pemu_dev->bars[BAR_IDX_1].len, -1)) {
 		dev_err(&pdev->dev, "%s: failed to add memory to gen_pool", __func__);
 		pcie_accel_emu_dev_clean(pemu_dev);
 		return -ENOMEM;
 	}
-	dev_dbg(&pdev->dev, "%s: added DMA area to gen_pool", __func__);
+	dev_dbg(&pdev->dev, "%s: added device memory region to gen_pool", __func__);
 
 	pci_set_drvdata(pdev, pemu_dev);
 	return 0;
@@ -228,8 +212,16 @@ static int pcie_accel_emu_probe(struct pci_dev *pdev, const struct pci_device_id
 
 	/* select and request BARs if available */
 	mem_bars = pci_select_bars(pdev, IORESOURCE_MEM);
+	/* check if BAR0 is available (for registers) */
 	if (!(mem_bars & (1 << PCIEMU_HW_BAR0))) {
 		dev_err(&pdev->dev, "%s: BAR0 not available", __func__);
+		err = -ENXIO;
+		goto err_select_region;
+	}
+
+	/* check if BAR1 is available (for dedicated device memory) */
+	if (!(mem_bars & (1 << PCIEMU_HW_BAR1))) {
+		dev_err(&pdev->dev, "%s: BAR1 not available", __func__);
 		err = -ENXIO;
 		goto err_select_region;
 	}

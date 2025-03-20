@@ -85,7 +85,7 @@ static int pcie_accel_emu_irq_enable_msi(struct pcie_accel_emu_dev *pemu_dev)
 	}
 
 	/* map the single MMIO ACK address */
-	pemu_dev->irq.mmio_ack_irq = pemu_dev->bar.mmio + PCIEMU_HW_BAR0_IRQ_0_LOWER;
+	pemu_dev->irq.mmio_ack_irq = pemu_dev->bars[BAR_IDX_0].mmio + PCIEMU_HW_BAR0_IRQ_0_LOWER;
 
 	/* request IRQs for all vectors */
 	for (int i = 0; i < PCIEMU_HW_IRQ_CNT; i++) {

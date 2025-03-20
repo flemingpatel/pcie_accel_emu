@@ -184,6 +184,12 @@ void pciemu_mmio_init(PCIEMUDevice *dev, Error **errp)
                           "pciemu-mmio", qemu_target_page_size());
     pci_register_bar(&dev->pci_dev, 0, PCI_BASE_ADDRESS_SPACE_MEMORY,
                      &dev->mmio);
+
+    /* Initialize BAR1 for dedicated device memory */
+    const uint64_t mem_size = PCIEMU_HW_DMA_AREA_SIZE;
+    memory_region_init_ram(&dev->dev_mem, OBJECT(dev), "pciemu_devmem", mem_size, errp);
+    pci_register_bar(&dev->pci_dev, 1, PCI_BASE_ADDRESS_SPACE_MEMORY,
+		     &dev->dev_mem);
 }
 
 /**

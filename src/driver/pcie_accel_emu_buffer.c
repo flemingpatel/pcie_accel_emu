@@ -8,7 +8,6 @@
 
 #include "driver/pcie_accel_emu_module.h"
 
-/* Find buffer by handle */
 struct pcie_accel_emu_buffer *find_buffer_by_handle(struct pcie_accel_emu_dev *dev, uint64_t handle)
 {
 	struct pcie_accel_emu_buffer *buffer;
@@ -24,33 +23,23 @@ struct pcie_accel_emu_buffer *find_buffer_by_handle(struct pcie_accel_emu_dev *d
 	return NULL;
 }
 
-/* Allocate Buffer */
 int allocate_buffer(struct pcie_accel_emu_dev *dev, size_t size, struct pcie_accel_emu_buffer **out_buffer)
 {
 	struct pcie_accel_emu_buffer *buffer;
-	unsigned long vaddr;
-	dma_addr_t dma_addr;
 
 	/* allocate buffer structure */
 	buffer = kzalloc(sizeof(*buffer), GFP_KERNEL);
 	if (!buffer)
 		return -ENOMEM;
 
-	/* allocate memory from gen_pool */
-	vaddr = gen_pool_alloc(dev->dma_pool, size);
-	if (!vaddr) {
-		kfree(buffer);
-		return -ENOMEM;
-	}
-
-	/* calculate DMA address */
-	dma_addr = dev->dma_area_phys_addr + (vaddr - (unsigned long)dev->dma_area_cpu_addr);
-
 	/* initialize buffer structure */
 	buffer->handle = atomic64_inc_return(&dev->buffer_id_counter);
 	buffer->size = size;
-	buffer->cpu_addr = (void *)vaddr;
-	buffer->dma_handle = dma_addr;
+	buffer->cpu_addr = dma_alloc_coherent(&dev->pdev->dev, size, &buffer->dma_handle, GFP_KERNEL);
+	if (!buffer->cpu_addr) {
+		kfree(buffer);
+		return -ENOMEM;
+	}
 
 	/* add buffer to the list */
 	mutex_lock(&dev->buffer_list_lock);
@@ -59,35 +48,52 @@ int allocate_buffer(struct pcie_accel_emu_dev *dev, size_t size, struct pcie_acc
 
 	*out_buffer = buffer;
 
-	dev_dbg(&dev->pdev->dev, "%s: buffer allocated (handle=%llu, size=%zu, cpu addr=%p, dma Addr=%pad)",
+	dev_dbg(&dev->pdev->dev, "%s: buffer allocated (handle=%llu, size=%zu, cpu_addr=%p, dma_handle=%pad)",
 		__func__, buffer->handle, buffer->size, buffer->cpu_addr, &buffer->dma_handle);
 
 	return 0;
 }
 
-/* Free buffer by pointer */
 int free_buffer(struct pcie_accel_emu_dev *dev, struct pcie_accel_emu_buffer *buffer)
 {
 	if (!buffer)
 		return -EINVAL;
 
-	/* free memory back to gen_pool */
-	gen_pool_free(dev->dma_pool, (unsigned long)buffer->cpu_addr, buffer->size);
+	/* free dma coherent memory */
+	dma_free_coherent(&dev->pdev->dev, buffer->size, buffer->cpu_addr, buffer->dma_handle);
 
 	/* remove from buffer_list */
 	mutex_lock(&dev->buffer_list_lock);
 	list_del(&buffer->list);
 	mutex_unlock(&dev->buffer_list_lock);
 
-	dev_dbg(&dev->pdev->dev, "%s: buffer freed (handle=%llu)\n", __func__, buffer->handle);
-
 	/* free buffer structure */
 	kfree(buffer);
+
+	dev_dbg(&dev->pdev->dev, "%s: buffer freed (handle=%llu)\n", __func__, buffer->handle);
 
 	return 0;
 }
 
-/* Free buffer by handle */
+int free_buffer_locked(struct pcie_accel_emu_dev *dev, struct pcie_accel_emu_buffer *buffer)
+{
+	if (!buffer)
+		return -EINVAL;
+
+	/* free dma coherent memory */
+	dma_free_coherent(&dev->pdev->dev, buffer->size, buffer->cpu_addr, buffer->dma_handle);
+
+	/* expects caller to lock the list */
+	list_del(&buffer->list);
+
+	/* free buffer structure */
+	kfree(buffer);
+
+	dev_dbg(&dev->pdev->dev, "%s: buffer freed (handle=%llu)\n", __func__, buffer->handle);
+
+	return 0;
+}
+
 int free_buffer_by_handle(struct pcie_accel_emu_dev *dev, uint64_t handle)
 {
 	struct pcie_accel_emu_buffer *buffer;
@@ -97,26 +103,17 @@ int free_buffer_by_handle(struct pcie_accel_emu_dev *dev, uint64_t handle)
 	if (!buffer)
 		return -ENOENT;
 
-	/* free buffer */
+	/* call free buffer */
 	return free_buffer(dev, buffer);
 }
 
-/* Free all buffers */
 void free_all_buffers(struct pcie_accel_emu_dev *dev)
 {
 	struct pcie_accel_emu_buffer *buffer, *next_buffer;
 	mutex_lock(&dev->buffer_list_lock);
 	list_for_each_entry_safe(buffer, next_buffer, &dev->buffer_list, list) {
-		/* free memory back to gen_pool */
-		gen_pool_free(dev->dma_pool, (unsigned long)buffer->cpu_addr, buffer->size);
-
-		/* remove from buffer_list */
-		list_del(&buffer->list);
-
-		dev_dbg(&dev->pdev->dev, "%s: buffer freed (handle=%llu)\n", __func__, buffer->handle);
-
-		/* free buffer structure */
-		kfree(buffer);
+		/* call free_buffer_locked */
+		free_buffer_locked(dev, buffer);
 	}
 	mutex_unlock(&dev->buffer_list_lock);
 }

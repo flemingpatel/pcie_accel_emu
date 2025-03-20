@@ -49,13 +49,22 @@ struct pcie_accel_emu_buffer *find_buffer_by_handle(struct pcie_accel_emu_dev *d
 int allocate_buffer(struct pcie_accel_emu_dev *dev, size_t size, struct pcie_accel_emu_buffer **out_buffer);
 
 /**
- * @brief Frees a buffer given its pointer
+ * @brief Frees a buffer given its pointer with internal list lock
  *
  * @param dev Pointer to the device structure
  * @param buffer The buffer to free
  * @return 0 on success or negative error code on failure
  */
 int free_buffer(struct pcie_accel_emu_dev *dev, struct pcie_accel_emu_buffer *buffer);
+
+/**
+ * @brief Frees a buffer given its pointer without internal list lock
+ *
+ * @param dev Pointer to the device structure
+ * @param buffer The buffer to free
+ * @return 0 on success or negative error code on failure
+ */
+int free_buffer_locked(struct pcie_accel_emu_dev *dev, struct pcie_accel_emu_buffer *buffer);
 
 /**
  * @brief Frees a buffer given its handle

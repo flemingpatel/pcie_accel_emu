@@ -76,32 +76,58 @@ long pcie_accel_emu_ioctl_load_model(struct pcie_accel_emu_dev *dev, struct vai_
 	if (!buffer)
 		return -EINVAL;
 
+	/* verify that the user-requested data_size fits in the host buffer */
+	if (karg.data_size > buffer->size) {
+		dev_err(&dev->pdev->dev, "%s: model data_size (%zu) exceeds the host buffer size (%zu)",
+			__func__, karg.data_size, buffer->size);
+		return -EINVAL;
+	}
+
+	/* Allocate region in dedicated device memory (BAR1) using gen_pool.
+	 * Here, the allocation is relative to the BAR1 mapping.
+	 */
+	dma_addr_t dev_mem_offset;
+	unsigned long dev_mem_vaddr;
+
+	dev_mem_vaddr = gen_pool_alloc(dev->device_mem_pool, karg.data_size);
+	if (!dev_mem_vaddr) {
+		dev_err(&dev->pdev->dev, "%s: not enough space in device memory for model of size %zu",
+			__func__, karg.data_size);
+		return -ENOMEM;
+	}
+
+	/*
+	 * The absolute physical destination address is computed as:
+	 * 	dev_mem_offset = bar1.start + (dev_mem_vaddr - (unsigned long)bar1.mmio)
+	 */
+	dev_mem_offset =
+		dev->bars[BAR_IDX_1].start + (dev_mem_vaddr - (unsigned long)dev->bars[BAR_IDX_1].mmio);
+
 	/* allocate and initialize model structure */
 	model = kzalloc(sizeof(*model), GFP_KERNEL);
-	if (!model)
+	if (!model) {
+		/* free mem in pool */
+		gen_pool_free(dev->device_mem_pool, dev_mem_vaddr, karg.data_size);
 		return -ENOMEM;
-
+	}
 	model->model_id = atomic_inc_return(&dev->model_id_counter);
-	model->buffer_handle = karg.buffer_handle;
 	model->data_size = karg.data_size;
+	model->buffer_handle = karg.buffer_handle;
+	model->device_mem_offset = dev_mem_offset;
 
 	/* Add model to the list */
 	mutex_lock(&dev->model_list_lock);
 	list_add_tail(&model->list, &dev->model_list);
 	mutex_unlock(&dev->model_list_lock);
 
-	/* write model buffer dma addr and size to device registers */
-	iowrite32((uint64_t)buffer->dma_handle, dev->bar.mmio + PCIEMU_HW_BAR0_MODEL_LOAD_ADDR);
-	iowrite32(buffer->size, dev->bar.mmio + PCIEMU_HW_BAR0_MODEL_LOAD_SIZE);
-
-	/* signal the device to load model */
-	iowrite32(PCIEMU_HW_MODEL_CMD_LOAD_MODEL, dev->bar.mmio + PCIEMU_HW_BAR0_MODEL_CONTROL);
+	// TODO implement
 
 	/* wait for device to acknowledge model load via IRQ */
 	wait_for_completion(&dev->model_ctrl_done);
 
-	dev_dbg(&dev->pdev->dev, "%s: model loaded successfully (id=%u, buffer_handle=%llu, size=%zu)",
-		__func__, model->model_id, model->buffer_handle, model->data_size);
+	dev_dbg(&dev->pdev->dev,
+		"%s: model loaded successfully (id=%u, buffer_handle=%llu, device_mem_offset=%pad, size=%zu)",
+		__func__, model->model_id, model->buffer_handle, &model->device_mem_offset, model->data_size);
 
 	/* return model_id to user-space */
 	karg.model_id = model->model_id;
@@ -128,34 +154,7 @@ long pcie_accel_emu_ioctl_run_inference(struct pcie_accel_emu_dev *dev,
 	if (karg.model_id == 0 || karg.input_handle == 0 || karg.output_handle == 0)
 		return -EINVAL;
 
-	/* find the model to validate it exist */
-	mutex_lock(&dev->model_list_lock);
-	list_for_each_entry(model, &dev->model_list, list) {
-		if (model->model_id == karg.model_id)
-			break;
-	}
-	mutex_unlock(&dev->model_list_lock);
-
-	if (&model->list == &dev->model_list)
-		return -ENOENT;
-
-	/* find the input and output buffers */
-	input_buffer = find_buffer_by_handle(dev, karg.input_handle);
-	output_buffer = find_buffer_by_handle(dev, karg.output_handle);
-	if (!input_buffer || !output_buffer)
-		return -EINVAL;
-
-	/* write model input buffer, output buffer dma addr and size to device registers */
-	iowrite32((uint64_t)input_buffer->dma_handle, dev->bar.mmio + PCIEMU_HW_BAR0_MODEL_INPUT_ADDR);
-	iowrite32(input_buffer->size, dev->bar.mmio + PCIEMU_HW_BAR0_MODEL_INPUT_SIZE);
-	iowrite32((uint64_t)output_buffer->dma_handle, dev->bar.mmio + PCIEMU_HW_BAR0_MODEL_OUTPUT_ADDR);
-	iowrite32(output_buffer->size, dev->bar.mmio + PCIEMU_HW_BAR0_MODEL_OUTPUT_SIZE);
-
-	/* write batch size to device registers */
-	iowrite32(karg.batch_size, dev->bar.mmio + PCIEMU_HW_BAR0_MODEL_BATCH_SIZE);
-
-	/* signal the device to load model */
-	iowrite32(PCIEMU_HW_MODEL_CMD_RUN_INFERENCE, dev->bar.mmio + PCIEMU_HW_BAR0_MODEL_CONTROL);
+	// TODO implement
 
 	/* wait for device to acknowledge model run inference via IRQ */
 	wait_for_completion(&dev->model_ctrl_done);

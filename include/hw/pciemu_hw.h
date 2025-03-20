@@ -24,10 +24,13 @@
 /**
  * --------------------------------------------------------------------------------
  * Base Address Registers (BARs)
+ * BAR0: Control registers, DMA config, AI commands
+ * BAR1: Dedicated device (internal) memory
  * --------------------------------------------------------------------------------
  */
 #define PCIEMU_HW_BAR0 0
-#define PCIEMU_HW_BAR_CNT 1
+#define PCIEMU_HW_BAR1 1
+#define PCIEMU_HW_BAR_CNT 2
 
 /**
  * --------------------------------------------------------------------------------
@@ -55,9 +58,6 @@
 
 /*
  * Model Management Registers
- * The device will do internal DMA from these registers (for now),
- * however, we will use them as offset to utilize the shared DMA buffer (above registers) in the future.
- * In theory, we may not need size registers (TODO).
  */
 #define PCIEMU_HW_BAR0_MODEL_LOAD_ADDR 0x58 /* Address to load the model from */
 #define PCIEMU_HW_BAR0_MODEL_LOAD_SIZE 0x60 /* Size of the model to load */
@@ -89,7 +89,7 @@
 /* DMA Address Capability */
 #define PCIEMU_HW_DMA_ADDR_CAPABILITY 64 /* Device supports 64-bit DMA addresses */
 
-/* DMA Area in Device Memory */
+/* Dedicated Device Memory Size (BAR1) */
 #define PCIEMU_HW_DMA_AREA_SIZE 0x100000 /* 1 MB */
 #define PCIEMU_HW_DMA_AREA_START 0x0 /* Start offset in device memory */
 

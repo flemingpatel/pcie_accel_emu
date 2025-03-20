@@ -50,65 +50,105 @@ pciemu_dma_inside_device_boundaries(dma_addr_t addr)
 /**
  * pciemu_dma_execute: Execute the DMA operation
  *
- * Effectively executes the DMA operation according to the configurations
- * in the transfer descriptor.
+ * This function is invoked by the QEMU device model when the doorbell register is written.
+ * It reads the DMA configuration registers (source, destination, length, command)
+ * and then performs a software‐emulated DMA transfer.
+ *
+ * In our improved design, the destination (for DMA to device) or source (for DMA from device)
+ * is located in the dedicated device memory region. That memory is mapped via BAR1 and managed
+ * by the driver. The DMA transfer uses the following logic:
+ *
+ * For DMA_TO_DEVICE:
+ * 	- The source is the host buffer (given by the DMA configuration, after masking).
+ * 	- The destination is computed as:
+ * 		device_mem_virt + (dma->config.txdesc.dst - PCIEMU_HW_DMA_AREA_START)
+ * 		where device_mem_virt is the kernel virtual address mapping of BAR1.
+ * For DMA_FROM_DEVICE:
+ * 	- The source is computed similarly (from device memory).
+ * 	- The destination is a host DMA buffer address.
+ *
+ * After the transfer, an interrupt is raised to notify the driver.
  *
  * @dev: Instance of PCIEMUDevice object being used
  */
 static void pciemu_dma_execute(PCIEMUDevice *dev)
 {
-    DMAEngine *dma = &dev->dma;
-    if (dma->config.cmd != PCIEMU_HW_DMA_DIRECTION_TO_DEVICE &&
-        dma->config.cmd != PCIEMU_HW_DMA_DIRECTION_FROM_DEVICE)
-        return;
-    if (dma->config.cmd == PCIEMU_HW_DMA_DIRECTION_TO_DEVICE)
-    {
-        /* DMA_DIRECTION_TO_DEVICE
-         *   The transfer direction is RAM(or other device)->device.
-         *   The content in the bus address dma->config.txdesc.src, which points
-         *   to RAM memory (or other device memory), will be copied to address
-         *   dst inside the device.
-         *   dma->buff is the dedicated area inside the device to receive
-         *   DMA transfers. Thus, dst is basically the offset of dma->buff.
-         */
-        if (!pciemu_dma_inside_device_boundaries(dma->config.txdesc.dst))
-        {
-            qemu_log_mask(LOG_GUEST_ERROR, "dst register out of bounds \n");
-            return;
-        }
-        dma_addr_t src = pciemu_dma_addr_mask(dev, dma->config.txdesc.src);
-        dma_addr_t dst = dma->config.txdesc.dst - PCIEMU_HW_DMA_AREA_START;
-        int err = pci_dma_read(&dev->pci_dev, src, dma->buff + dst,
-                               dma->config.txdesc.len);
-        if (err)
-        {
-            qemu_log_mask(LOG_GUEST_ERROR, "pci_dma_read err=%d\n", err);
-        }
-    } else
-    {
-        /* DMA_DIRECTION_FROM_DEVICE
-         *   The transfer direction is device->RAM (or other device).
-         *   This means that the content in the src address inside the device
-         *   will be copied to the bus address dma->config.txdesc.dst, which
-         *   points to a RAM memory (or other device memory).
-         *   dma->buff is the dedicated area inside the device to receive
-         *   DMA transfers. Thus, src is basically the offset of dma->buff.
-         */
-        if (!pciemu_dma_inside_device_boundaries(dma->config.txdesc.src))
-        {
-            qemu_log_mask(LOG_GUEST_ERROR, "src register out of bounds \n");
-            return;
-        }
-        dma_addr_t src = dma->config.txdesc.src - PCIEMU_HW_DMA_AREA_START;
-        dma_addr_t dst = pciemu_dma_addr_mask(dev, dma->config.txdesc.dst);
-        int err = pci_dma_write(&dev->pci_dev, dst, dma->buff + src,
-                                dma->config.txdesc.len);
-        if (err)
-        {
-            qemu_log_mask(LOG_GUEST_ERROR, "pci_dma_write err=%d\n", err);
-        }
-    }
-    pciemu_irq_raise(dev, PCIEMU_HW_IRQ_DMA_ENDED_VECTOR);
+	DMAEngine *dma = &dev->dma;
+	/* check if the DMA command is valid */
+	if (dma->config.cmd != PCIEMU_HW_DMA_DIRECTION_TO_DEVICE &&
+	    dma->config.cmd != PCIEMU_HW_DMA_DIRECTION_FROM_DEVICE)
+		return;
+
+	/* get the base pointer to the dedicated device memory (BAR1) */
+	void *base_ptr = memory_region_get_ram_ptr(&dev->dev_mem);
+	if (!base_ptr) {
+		qemu_log_mask(LOG_GUEST_ERROR, "failed to get base pointer for device memory\n");
+		return;
+	}
+
+	if (dma->config.cmd == PCIEMU_HW_DMA_DIRECTION_TO_DEVICE) {
+		/* --- DMA: Host -> Device (TO_DEVICE) ---
+		 *
+		 * Verify that the destination register value is within device memory boundaries.
+		 * pciemu_dma_inside_device_boundaries() is a helper that checks whether the
+		 * given offset falls within the valid region of device internal memory.
+		 */
+		if (!pciemu_dma_inside_device_boundaries(dma->config.txdesc.dst)) {
+			qemu_log_mask(LOG_GUEST_ERROR, "dst register out of bounds\n");
+			return;
+		}
+
+		/* get the source DMA address from the configuration (masking as needed) */
+		dma_addr_t src = pciemu_dma_addr_mask(dev, dma->config.txdesc.src);
+
+		/* Compute the destination pointer in the device's dedicated memory.
+		 * The driver programs a destination (dev_dst) that is a physical address
+		 * within the device's internal memory. Here, we assume PCIEMU_HW_DMA_AREA_START is 0.
+		 * So, the offset inside BAR1 is simply:
+		 * 	(dma->config.txdesc.dst - PCIEMU_HW_DMA_AREA_START)
+		 * We then add that offset to the kernel mapping of BAR1 (dev->device_mem_virt)
+		 * to get the virtual address where the data should be copied.
+		 */
+		dma_addr_t dst_offset = dma->config.txdesc.dst - PCIEMU_HW_DMA_AREA_START;
+		void *dst_ptr = base_ptr + dst_offset;
+
+		/* Emulate the DMA transfer:
+		 * pci_dma_read() is a helper that, in our simulation, copies data
+		 * from the host memory (pointed to by src) into the device memory at dst_ptr.
+		 */
+		int err = pci_dma_read(&dev->pci_dev, src, dst_ptr, dma->config.txdesc.len);
+		if (err) {
+			qemu_log_mask(LOG_GUEST_ERROR, "pci_dma_read error=%d\n", err);
+		}
+	} else {
+		/* --- DMA: Device -> Host (FROM_DEVICE) --- */
+
+		/* verify that the source register value is within device memory boundaries */
+		if (!pciemu_dma_inside_device_boundaries(dma->config.txdesc.src)) {
+			qemu_log_mask(LOG_GUEST_ERROR, "src register out of bounds\n");
+			return;
+		}
+
+		/* Calculate the source offset in the device memory.
+		 * For FROM_DEVICE, the DMA configuration's src field represents an offset
+		 * within the device internal memory. We subtract the base and then add it to
+		 * the BAR1 virtual mapping.
+		 */
+		dma_addr_t src_offset = dma->config.txdesc.src - PCIEMU_HW_DMA_AREA_START;
+		void *src_ptr = base_ptr + src_offset;
+
+		/* get the destination (host buffer) address from the configuration */
+		dma_addr_t dst = pciemu_dma_addr_mask(dev, dma->config.txdesc.dst);
+
+		/* emulate the DMA transfer by copying data from device memory to host memory */
+		int err = pci_dma_write(&dev->pci_dev, dst, src_ptr, dma->config.txdesc.len);
+		if (err) {
+			qemu_log_mask(LOG_GUEST_ERROR, "pci_dma_write error=%d\n", err);
+		}
+	}
+
+	/* after the DMA operation completes, raise an interrupt to signal completion */
+	pciemu_irq_raise(dev, PCIEMU_HW_IRQ_DMA_ENDED_VECTOR);
 }
 
 /* -----------------------------------------------------------------------------
