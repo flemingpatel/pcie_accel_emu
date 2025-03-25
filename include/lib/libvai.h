@@ -13,26 +13,26 @@
 #include "common/common_ioctl.h"
 
 /**
- * @brief Allocates a buffer in the device
+ * @brief Register user-space buffer in the driver
  *
  * @param fd File descriptor of the device
  * @param size Size of the buffer to allocate in bytes
  * @param handle Pointer to store the buffer handle
  * @return 0 on success, positive error code on failure
  */
-int vai_alloc_buffer(int fd, size_t size, uint64_t *handle);
+int vai_register_buffer(int fd, size_t size, uint64_t *handle);
 
 /**
- * @brief Frees a previously allocated buffer in the device
+ * @brief Deregisters a previously registered user-space buffer in the driver
  *
  * @param fd File descriptor of the device
  * @param handle Handle of the buffer to free
  * @return 0 on success, positive error code on failure
  */
-int vai_free_buffer(int fd, uint64_t handle);
+int vai_deregister_buffer(int fd, uint64_t handle);
 
 /**
- * @brief Loads an AI model into the device
+ * @brief Loads an AI model into the device from driver
  *
  * @param fd File descriptor of the device
  * @param buffer_handle Handle to the buffer containing the model data
@@ -43,7 +43,7 @@ int vai_free_buffer(int fd, uint64_t handle);
 int vai_load_model(int fd, uint64_t buffer_handle, size_t data_size, uint32_t *model_id);
 
 /**
- * @brief Unloads an AI model from the device
+ * @brief Unloads an AI model from the device from driver
  *
  * @param fd File descriptor of the device
  * @param model_id ID of the model to unload
@@ -52,7 +52,7 @@ int vai_load_model(int fd, uint64_t buffer_handle, size_t data_size, uint32_t *m
 int vai_unload_model(int fd, uint32_t model_id);
 
 /**
- * @brief Runs inference using a loaded AI model.
+ * @brief Runs inference using a loaded AI model in the device from driver
  *
  * @param fd File descriptor of the device
  * @param model_id ID of the loaded model

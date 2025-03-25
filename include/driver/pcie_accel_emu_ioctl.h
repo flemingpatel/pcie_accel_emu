@@ -16,23 +16,23 @@
 struct pcie_accel_emu_dev;
 
 /**
- * @brief Handle buffer allocation IOCTL
+ * @brief Handle buffer registration in the driver
  *
  * @param dev Pointer to the device structure
  * @param arg User-space pointer to the allocation argument structure
  * @return 0 on success or negative error code on failure
  */
-long pcie_accel_emu_ioctl_alloc_buffer(struct pcie_accel_emu_dev *dev,
-				       struct vai_alloc_buffer_arg __user *arg);
+long pcie_accel_emu_ioctl_register_buffer(struct pcie_accel_emu_dev *dev,
+					  struct vai_register_buffer_arg __user *arg);
 
 /**
- * @brief Handle buffer de-allocation IOCTL
+ * @brief Handle buffer deregistration in the driver
  *
  * @param dev Pointer to the device structure
  * @param arg User-space pointer to the buffer handle to free
  * @return 0 on success or negative error code on failure
  */
-long pcie_accel_emu_ioctl_free_buffer(struct pcie_accel_emu_dev *dev, uint64_t __user *arg);
+long pcie_accel_emu_ioctl_deregister_buffer(struct pcie_accel_emu_dev *dev, uint64_t __user *arg);
 
 /**
  * @brief Handle model loading IOCTL

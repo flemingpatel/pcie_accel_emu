@@ -9,11 +9,11 @@
 #include "driver/pcie_accel_emu_module.h"
 
 /* Allocate Buffer */
-long pcie_accel_emu_ioctl_alloc_buffer(struct pcie_accel_emu_dev *dev,
-				       struct vai_alloc_buffer_arg __user *arg)
+long pcie_accel_emu_ioctl_register_buffer(struct pcie_accel_emu_dev *dev,
+					  struct vai_register_buffer_arg __user *arg)
 {
 	struct pcie_accel_emu_buffer *buffer;
-	struct vai_alloc_buffer_arg karg;
+	struct vai_register_buffer_arg karg;
 	int ret = 0;
 
 	/* copy allocation parameters from user-space */
@@ -23,7 +23,7 @@ long pcie_accel_emu_ioctl_alloc_buffer(struct pcie_accel_emu_dev *dev,
 	if (karg.size == 0 || karg.size > PCIEMU_HW_DMA_AREA_SIZE)
 		return -EINVAL;
 
-	ret = allocate_buffer(dev, karg.size, &buffer);
+	ret = register_buffer(dev, karg.size, &buffer);
 	if (ret)
 		return ret;
 
@@ -31,7 +31,7 @@ long pcie_accel_emu_ioctl_alloc_buffer(struct pcie_accel_emu_dev *dev,
 	karg.handle = buffer->handle;
 	if (copy_to_user(arg, &karg, sizeof(karg))) {
 		/* cleanup on failure */
-		free_buffer(dev, buffer);
+		deregister_buffer(dev, buffer);
 		return -EFAULT;
 	}
 
@@ -39,7 +39,7 @@ long pcie_accel_emu_ioctl_alloc_buffer(struct pcie_accel_emu_dev *dev,
 }
 
 /* Free Buffer */
-long pcie_accel_emu_ioctl_free_buffer(struct pcie_accel_emu_dev *dev, uint64_t __user *arg)
+long pcie_accel_emu_ioctl_deregister_buffer(struct pcie_accel_emu_dev *dev, uint64_t __user *arg)
 {
 	uint64_t handle;
 	int ret = 0;
@@ -49,7 +49,7 @@ long pcie_accel_emu_ioctl_free_buffer(struct pcie_accel_emu_dev *dev, uint64_t _
 		return -EFAULT;
 
 	/* find and free the buffer */
-	ret = free_buffer_by_handle(dev, handle);
+	ret = deregister_buffer_by_handle(dev, handle);
 	if (ret)
 		return ret;
 
@@ -175,12 +175,13 @@ long pcie_accel_emu_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 	mutex_lock(&pemu_dev->ioctl_lock);
 
 	switch (cmd) {
-	case PCIE_ACCEL_EMU_IOCTL_ALLOC_BUFFER:
-		ret = pcie_accel_emu_ioctl_alloc_buffer(pemu_dev, (struct vai_alloc_buffer_arg __user *)arg);
+	case PCIE_ACCEL_EMU_IOCTL_REGISTER_BUFFER:
+		ret = pcie_accel_emu_ioctl_register_buffer(pemu_dev,
+							   (struct vai_register_buffer_arg __user *)arg);
 		break;
 
-	case PCIE_ACCEL_EMU_IOCTL_FREE_BUFFER:
-		ret = pcie_accel_emu_ioctl_free_buffer(pemu_dev, (uint64_t __user *)arg);
+	case PCIE_ACCEL_EMU_IOCTL_DEREGISTER_BUFFER:
+		ret = pcie_accel_emu_ioctl_deregister_buffer(pemu_dev, (uint64_t __user *)arg);
 		break;
 
 	case PCIE_ACCEL_EMU_IOCTL_LOAD_MODEL:

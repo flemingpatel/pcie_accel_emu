@@ -100,7 +100,7 @@ static void pcie_accel_emu_dev_clean(struct pcie_accel_emu_dev *pemu_dev)
 	mutex_unlock(&pemu_dev->model_list_lock);
 
 	/* clean up buffer_list */
-	free_all_buffers(pemu_dev);
+	deregister_all_buffers(pemu_dev);
 
 	/* clean up gen_pool */
 	if (pemu_dev->device_mem_pool) {

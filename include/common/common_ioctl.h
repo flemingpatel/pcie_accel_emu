@@ -18,18 +18,20 @@
 #endif
 
 /**
- * @brief Arguments for buffer allocation IOCTL
+ * @brief Argument struct for buffer registration from libvai
  *
+ * @v_addr User-space virtual address of the buffer
  * @size Size of the buffer to allocate (in bytes)
  * @handle Unique handle to the allocated buffer
  */
-struct vai_alloc_buffer_arg {
+struct vai_register_buffer_arg {
+	uint64_t v_addr;
 	size_t size;
 	uint64_t handle;
 };
 
 /**
- * @brief Arguments for model loading IOCTL
+ * @brief Argument struct for model loading from libvai
  *
  * @buffer_handle Handle to the buffer containing the model data
  * @data_size Size of the model buffer in bytes
@@ -42,7 +44,7 @@ struct vai_load_model_arg {
 };
 
 /**
- * @brief Arguments for running inference IOCTL
+ * @brief Argument struct for running inference from libvai
  *
  * @model_id ID of the loaded model to use for inference
  * @input_handle Handle to the input data buffer
@@ -64,8 +66,9 @@ struct vai_run_inference_arg {
 #define PCIE_ACCEL_EMU_IOCTL_MAGIC 0xE1
 
 /* Buffer Management IOCTL */
-#define PCIE_ACCEL_EMU_IOCTL_ALLOC_BUFFER _IOWR(PCIE_ACCEL_EMU_IOCTL_MAGIC, 3, struct vai_alloc_buffer_arg)
-#define PCIE_ACCEL_EMU_IOCTL_FREE_BUFFER _IOW(PCIE_ACCEL_EMU_IOCTL_MAGIC, 4, uint64_t)
+#define PCIE_ACCEL_EMU_IOCTL_REGISTER_BUFFER \
+	_IOWR(PCIE_ACCEL_EMU_IOCTL_MAGIC, 3, struct vai_register_buffer_arg)
+#define PCIE_ACCEL_EMU_IOCTL_DEREGISTER_BUFFER _IOW(PCIE_ACCEL_EMU_IOCTL_MAGIC, 4, uint64_t)
 
 /* Model Management IOCTL */
 #define PCIE_ACCEL_EMU_IOCTL_LOAD_MODEL _IOW(PCIE_ACCEL_EMU_IOCTL_MAGIC, 5, struct vai_load_model_arg)

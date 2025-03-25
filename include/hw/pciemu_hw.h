@@ -50,27 +50,29 @@
 #define PCIEMU_HW_BAR0_IRQ_0_LOWER 0x28
 
 /* DMA Configuration Registers */
-#define PCIEMU_HW_BAR0_DMA_CFG_TXDESC_SRC 0x30
+#define PCIEMU_HW_BAR0_DMA_CFG_TXDESC_SRC 0x30 /* For contiguous/dma-coherent buffers */
 #define PCIEMU_HW_BAR0_DMA_CFG_TXDESC_DST 0x38
-#define PCIEMU_HW_BAR0_DMA_CFG_TXDESC_LEN 0x40
-#define PCIEMU_HW_BAR0_DMA_CFG_CMD 0x48
-#define PCIEMU_HW_BAR0_DMA_DOORBELL_RING 0x50
+/* Registers for SG pointer and count (Scatter/Gather) */
+#define PCIEMU_HW_BAR0_DMA_SG_PTR 0x40
+#define PCIEMU_HW_BAR0_DMA_SG_CNT 0x48
+#define PCIEMU_HW_BAR0_DMA_CFG_TXDESC_LEN 0x50
+#define PCIEMU_HW_BAR0_DMA_CFG_CMD 0x58
+#define PCIEMU_HW_BAR0_DMA_DOORBELL_RING 0x60
 
-/*
- * Model Management Registers
- */
-#define PCIEMU_HW_BAR0_MODEL_LOAD_ADDR 0x58 /* Address to load the model from */
-#define PCIEMU_HW_BAR0_MODEL_LOAD_SIZE 0x60 /* Size of the model to load */
+/* Model Management Registers */
+#define PCIEMU_HW_BAR0_MODEL_LOAD_ADDR 0x68 /* Address to load the model from */
+#define PCIEMU_HW_BAR0_MODEL_LOAD_SIZE 0x70 /* Size of the model to load */
 
 /* Model Inference Registers */
-#define PCIEMU_HW_BAR0_MODEL_INPUT_ADDR 0x68 /* Address of input data */
-#define PCIEMU_HW_BAR0_MODEL_INPUT_SIZE 0x70 /* Size of input data */
-#define PCIEMU_HW_BAR0_MODEL_OUTPUT_ADDR 0x78 /* Address for output data */
-#define PCIEMU_HW_BAR0_MODEL_OUTPUT_SIZE 0x80 /* Size for output data */
-#define PCIEMU_HW_BAR0_MODEL_BATCH_SIZE 0x88 /* Batch size for inference */
+#define PCIEMU_HW_BAR0_MODEL_INPUT_ADDR 0x78 /* Address of input data */
+#define PCIEMU_HW_BAR0_MODEL_INPUT_SIZE 0x80 /* Size of input data */
+#define PCIEMU_HW_BAR0_MODEL_OUTPUT_ADDR 0x88 /* Address for output data */
+#define PCIEMU_HW_BAR0_MODEL_OUTPUT_SIZE 0x90 /* Size for output data */
+#define PCIEMU_HW_BAR0_MODEL_BATCH_SIZE 0x98 /* Batch size for inference */
 
 /* After doorbell user does model ops */
-#define PCIEMU_HW_BAR0_MODEL_CONTROL 0x90 /* Control register for model operations */
+/* Control register for model operations */
+#define PCIEMU_HW_BAR0_MODEL_CONTROL 0x100
 
 /* MMIO BAR Boundaries */
 #define PCIEMU_HW_BAR0_START PCIEMU_HW_BAR0_REG_0

@@ -17,15 +17,22 @@ struct pcie_accel_emu_dev;
  *
  * @handle Unique handle for the buffer
  * @size Size of the buffer in bytes
- * @cpu_addr CPU-accessible address
- * @dma_handle DMA address
+ * @cpu_addr CPU-accessible address (vaddr)
+ * @num_pages Number of pages pinned
+ * @pages Array of pinned pages
+ * @sgl Scatter-list built from the pinned pages
+ * @sg_count Number of scatter-list entries
  * @list Linked list node
  */
+// TODO we can have dma-coherent buffer just like before
 struct pcie_accel_emu_buffer {
 	uint64_t handle;
 	size_t size;
-	void *cpu_addr;
-	dma_addr_t dma_handle;
+	uint64_t *cpu_addr;
+	int num_pages;
+	struct page **pages;
+	struct scatterlist *sgl;
+	int sg_count;
 	struct list_head list;
 };
 
@@ -39,47 +46,47 @@ struct pcie_accel_emu_buffer {
 struct pcie_accel_emu_buffer *find_buffer_by_handle(struct pcie_accel_emu_dev *dev, uint64_t handle);
 
 /**
- * @brief Allocates a buffer
+ * @brief Registers user space buffer (pin_user_pages_fast)
  *
  * @param dev Pointer to the device structure
  * @param size Size of the buffer to allocate
  * @param out_buffer Pointer to store the allocated buffer pointer
  * @return 0 on success or negative error code on failure
  */
-int allocate_buffer(struct pcie_accel_emu_dev *dev, size_t size, struct pcie_accel_emu_buffer **out_buffer);
+int register_buffer(struct pcie_accel_emu_dev *dev, size_t size, struct pcie_accel_emu_buffer **out_buffer);
 
 /**
- * @brief Frees a buffer given its pointer with internal list lock
+ * @brief Deregisters user space buffer with internal list lock
  *
  * @param dev Pointer to the device structure
  * @param buffer The buffer to free
  * @return 0 on success or negative error code on failure
  */
-int free_buffer(struct pcie_accel_emu_dev *dev, struct pcie_accel_emu_buffer *buffer);
+int deregister_buffer(struct pcie_accel_emu_dev *dev, struct pcie_accel_emu_buffer *buffer);
 
 /**
- * @brief Frees a buffer given its pointer without internal list lock
+ * @brief Deregisters user space buffer without internal list lock
  *
  * @param dev Pointer to the device structure
  * @param buffer The buffer to free
  * @return 0 on success or negative error code on failure
  */
-int free_buffer_locked(struct pcie_accel_emu_dev *dev, struct pcie_accel_emu_buffer *buffer);
+int deregister_buffer_locked(struct pcie_accel_emu_dev *dev, struct pcie_accel_emu_buffer *buffer);
 
 /**
- * @brief Frees a buffer given its handle
+ * @brief Deregisters user space buffer by given its handle
  *
  * @param dev Pointer to the device structure
  * @param handle The handle of the buffer to free
  * @return 0 on success or negative error code on failure
  */
-int free_buffer_by_handle(struct pcie_accel_emu_dev *dev, uint64_t handle);
+int deregister_buffer_by_handle(struct pcie_accel_emu_dev *dev, uint64_t handle);
 
 /**
- * @brief Frees all buffers
+ * @brief Deregisters all buffers
  *
  * @param dev The device structure
  */
-void free_all_buffers(struct pcie_accel_emu_dev *dev);
+void deregister_all_buffers(struct pcie_accel_emu_dev *dev);
 
 #endif /* PCIE_ACCEL_EMU_BUFFER_H */

@@ -8,16 +8,15 @@
 
 #include "lib/libvai.h"
 
-/* Allocates a buffer in the device */
-int vai_alloc_buffer(int fd, size_t size, uint64_t *handle)
+int vai_register_buffer(int fd, size_t size, uint64_t *handle)
 {
-	struct vai_alloc_buffer_arg arg;
+	struct vai_register_buffer_arg arg;
 	int ret;
 
 	memset(&arg, 0, sizeof(arg));
 	arg.size = size;
 
-	ret = ioctl(fd, PCIE_ACCEL_EMU_IOCTL_ALLOC_BUFFER, &arg);
+	ret = ioctl(fd, PCIE_ACCEL_EMU_IOCTL_REGISTER_BUFFER, &arg);
 	if (ret < 0)
 		return errno;
 
@@ -25,19 +24,17 @@ int vai_alloc_buffer(int fd, size_t size, uint64_t *handle)
 	return 0;
 }
 
-/* Frees a buffer in the device */
-int vai_free_buffer(int fd, uint64_t handle)
+int vai_deregister_buffer(int fd, uint64_t handle)
 {
 	long ret;
 
-	ret = ioctl(fd, PCIE_ACCEL_EMU_IOCTL_FREE_BUFFER, &handle);
+	ret = ioctl(fd, PCIE_ACCEL_EMU_IOCTL_DEREGISTER_BUFFER, &handle);
 	if (ret < 0)
 		return errno;
 
 	return 0;
 }
 
-/* Loads an AI model into the device */
 int vai_load_model(int fd, uint64_t buffer_handle, size_t data_size, uint32_t *model_id)
 {
 	struct vai_load_model_arg arg;
@@ -55,7 +52,6 @@ int vai_load_model(int fd, uint64_t buffer_handle, size_t data_size, uint32_t *m
 	return 0;
 }
 
-/* Unloads an AI model from the device */
 int vai_unload_model(int fd, uint32_t model_id)
 {
 	int ret;
@@ -67,7 +63,6 @@ int vai_unload_model(int fd, uint32_t model_id)
 	return 0;
 }
 
-/* Runs inference using a loaded AI model */
 int vai_run_inference(int fd, uint32_t model_id, uint64_t input_handle, ssize_t input_size,
 		      uint64_t output_handle, ssize_t output_size, uint32_t batch_size)
 {
