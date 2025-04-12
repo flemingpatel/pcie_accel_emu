@@ -20,10 +20,10 @@ long pcie_accel_emu_ioctl_register_buffer(struct pcie_accel_emu_dev *dev,
 	if (copy_from_user(&karg, arg, sizeof(karg)))
 		return -EFAULT;
 
-	if (karg.size == 0 || karg.size > PCIEMU_HW_DMA_AREA_SIZE)
+	if (karg.size == 0 || karg.v_addr == 0 || karg.size > PCIEMU_HW_DMA_AREA_SIZE)
 		return -EINVAL;
 
-	ret = register_buffer(dev, karg.size, &buffer);
+	ret = register_buffer(dev, karg.size, karg.v_addr, &buffer);
 	if (ret)
 		return ret;
 

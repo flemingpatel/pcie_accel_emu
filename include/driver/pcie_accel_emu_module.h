@@ -21,6 +21,8 @@
 #include <linux/module.h>
 #include <linux/uaccess.h>
 #include <linux/genalloc.h>
+#include <linux/mm.h>
+#include <linux/scatterlist.h>
 
 /* forward declaration */
 struct pcie_accel_emu_dev;
@@ -81,6 +83,7 @@ struct pcie_accel_emu_model {
  * @major Major device number
  * @cdev Character device structure
  * @ioctl_lock Mutex to protect IOCTL operations
+ * @dma_done Completion structure for DMA operations
  * @model_ctrl_done Completion structure for model control operations
  * @model_id_counter Atomic counter for assigning unique model IDs
  * @model_list List head for tracking loaded models
@@ -99,7 +102,8 @@ struct pcie_accel_emu_dev {
 	struct cdev cdev;
 	struct mutex ioctl_lock;
 
-	/* Model related fields */
+	/* completion flags */
+	struct completion dma_done;
 	struct completion model_ctrl_done;
 
 	/* Model List */

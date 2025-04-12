@@ -62,51 +62,7 @@ void pciemu_model_output_size(PCIEMUDevice *dev, dma_size_t size)
 static void pciemu_run_inference(PCIEMUDevice *dev)
 {
 	ModelEngine *model_engine = &dev->model_engine;
-
-	if (!model_engine->model_load_addr || !model_engine->model_load_size) {
-		qemu_log_mask(LOG_GUEST_ERROR, "model load registers missing \n");
-		return;
-	}
-
-	if (!model_engine->output_addr || !model_engine->output_size) {
-		qemu_log_mask(LOG_GUEST_ERROR, "model inference output registers missing \n");
-		return;
-	}
-
-	uint64_t model_load_size = model_engine->model_load_size;
-	uint64_t model_load_addr = model_engine->model_load_addr;
-
-	/* strings to append */
-	const char *append_str = " Fleming Patel (from custom pci qemu device)!";
-	size_t append_str_len = strlen(append_str);
-
-	/* ensure the output buffer can accommodate the original model data + appended string */
-	uint64_t model_output_size = model_engine->output_size;
-	uint64_t model_output_addr = model_engine->output_addr;
-
-	size_t total_output_size = model_load_size + append_str_len;
-	if (model_output_size < total_output_size) {
-		qemu_log_mask(LOG_GUEST_ERROR, "output buffer too small for result\n");
-		return;
-	}
-
-	/* allocate buffer for combined output */
-	uint8_t *output_data = g_malloc(total_output_size);
-
-	/* read the model data directly into the host dma output buffer */
-	pci_dma_read(&dev->pci_dev, model_load_addr, output_data, model_load_size);
-
-	/* append the new string directly to the output buffer
-	 * we use append_offset because model_load_size is buffer size not the bytes written to it
-	 */
-	size_t append_offset = strnlen((char *)output_data, total_output_size);
-	memcpy(output_data + append_offset, append_str, append_str_len);
-
-	/* write the combined output back to the host dma output buffer */
-	pci_dma_write(&dev->pci_dev, model_output_addr, output_data, total_output_size);
-
-	/* clean up */
-	g_free(output_data);
+	// TODO
 }
 
 /**

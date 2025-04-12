@@ -53,6 +53,12 @@ static irqreturn_t pcie_accel_emu_irq_handler(int irq, void *data)
 		complete(&pemu_dev->model_ctrl_done);
 		break;
 
+	case PCIEMU_HW_IRQ_DMA_ENDED_VECTOR:
+		dev_info(&pemu_dev->pdev->dev, "irq_handler - dma done interrupt");
+		/* complete the operation */
+		complete(&pemu_dev->dma_done);
+		break;
+
 	default:
 		// it won't hit this
 		return IRQ_NONE;

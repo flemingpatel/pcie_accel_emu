@@ -1,5 +1,5 @@
 /*
- * pcie_accel_emu_hw.h: Provides hardware definitions
+ * pciemu_hw.h: Provides hardware definitions
  *
  * SPDX-License-Identifier: GPL-2.0
  *
@@ -8,8 +8,6 @@
 
 #ifndef PCIEMU_HW_H
 #define PCIEMU_HW_H
-
-#include <linux/pci_regs.h>
 
 /**
  * --------------------------------------------------------------------------------

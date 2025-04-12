@@ -48,23 +48,7 @@ static int pcie_accel_emu_mmap(struct file *fp, struct vm_area_struct *vma)
 	uint64_t handle = vma->vm_pgoff;
 	struct pcie_accel_emu_buffer *buffer;
 
-	/* find the buffer with the given handle */
-	buffer = find_buffer_by_handle(pemu_dev, handle);
-	if (!buffer)
-		/* buffer not found */
-		return -EINVAL;
-
-	unsigned long pfn;
-	/* calculate the starting PFN */
-	pfn = virt_to_phys(buffer->cpu_addr) >> PAGE_SHIFT;
-
-	/* ensure the mmap size does not exceed buffer size */
-	if (vma->vm_end - vma->vm_start > buffer->size)
-		return -EINVAL;
-
-	/* remap the buffer into user-space */
-	if (remap_pfn_range(vma, vma->vm_start, pfn, vma->vm_end - vma->vm_start, vma->vm_page_prot))
-		return -EAGAIN;
+	// TODO implement
 
 	return 0;
 }
@@ -135,8 +119,11 @@ static int pcie_accel_emu_dev_init(struct pcie_accel_emu_dev *pemu_dev, struct p
 	/* initialize ioctl_lock */
 	mutex_init(&pemu_dev->ioctl_lock);
 
-	/* initialize model related fields */
+	/* initialize completion fields */
+	init_completion(&pemu_dev->dma_done);
 	init_completion(&pemu_dev->model_ctrl_done);
+
+	/* initialize model related fields */
 	atomic_set(&pemu_dev->model_id_counter, 0);
 	INIT_LIST_HEAD(&pemu_dev->model_list);
 	mutex_init(&pemu_dev->model_list_lock);
@@ -147,7 +134,7 @@ static int pcie_accel_emu_dev_init(struct pcie_accel_emu_dev *pemu_dev, struct p
 	mutex_init(&pemu_dev->buffer_list_lock);
 
 	/* create a gen_pool over the dedicated device memory (BAR1) */
-	pemu_dev->device_mem_pool = gen_pool_create(PAGE_SHIFT, -1);	// PAGE_SHIFT granularity
+	pemu_dev->device_mem_pool = gen_pool_create(PAGE_SHIFT, -1); // PAGE_SHIFT granularity
 	if (!pemu_dev->device_mem_pool) {
 		dev_err(&pdev->dev, "%s: failed to create gen_pool", __func__);
 		pcie_accel_emu_dev_clean(pemu_dev);

@@ -10,9 +10,17 @@
 #define COMMON_IOCTL_H
 
 #ifdef __KERNEL__
+/*
+ * when building inside the Linux kernel driver,
+ * we rely on kernel’s includes
+ */
 #include <asm-generic/ioctl.h>
 #include <linux/types.h>
 #else
+/*
+ * when building in QEMU or any other non-kernel context,
+ * we use the standard C integer headers.
+ */
 #include "base.h"
 #include <sys/ioctl.h>
 #endif
